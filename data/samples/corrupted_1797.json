@@ -1,0 +1,15 @@
+{
+  "sample_id": "corrupted_1797",
+  "file": "corrupted_1797.csv",
+  "device_type": "bearing",
+  "sampling_rate": 12000,
+  "rotation_speed": 1797,
+  "sensor_position": "drive_end",
+  "condition": "corrupted",
+  "condition_label": "损坏样本",
+  "n_samples": 300,
+  "source": "手工构造",
+  "source_url": "",
+  "source_detail": "缺陷类型：amplitude 列含空值、非数字文本（null、N/A、--）与 NaN，共 7 个问题行；总行数 300，明显短于 1024",
+  "note": "人为构造的损坏样本，用于验证数据校验与错误返回；不对应任何真实工况"
+}

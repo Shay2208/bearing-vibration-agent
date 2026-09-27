@@ -1,0 +1,15 @@
+{
+  "sample_id": "outer_race_1797",
+  "file": "outer_race_1797.csv",
+  "device_type": "bearing",
+  "sampling_rate": 12000,
+  "rotation_speed": 1797,
+  "sensor_position": "drive_end",
+  "condition": "outer_race_fault",
+  "condition_label": "外圈故障",
+  "n_samples": 12000,
+  "source": "CWRU Bearing Data Center",
+  "source_url": "https://engineering.case.edu/bearingdatacenter/download-data-file",
+  "source_detail": "12k Drive End Bearing Fault Data, X130_DE_time, outer race fault at 6 o'clock, fault diameter 0.007 inch, 0 hp",
+  "note": "窗口为连续 12000 点不重叠片段；condition 仅用于离线评测，不作为在线诊断输入"
+}
