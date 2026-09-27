@@ -1,0 +1,2619 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>工业设备故障诊断 Agent 工作台</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230f766e'/%3E%3Cpath d='M5 17h5l3-7 4 13 3-8h7' fill='none' stroke='%23fff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #f3f6f5;
+    --panel: #ffffff;
+    --ink: #202c32;
+    --ink-dim: #627178;
+    --line: #d8e1df;
+    --normal: #2f7d6f;
+    --abnormal: #b4553a;
+    --ok: #1f7a4d;
+    --warn: #a8700f;
+    --err: #a52020;
+    --accent: #247568;
+    --header: #24343a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", "Source Han Sans SC", "Segoe UI", sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+  header.page {
+    background: var(--header);
+    color: #fff;
+    padding: 20px 24px;
+  }
+  .header-inner { max-width: 1680px; margin: 0 auto; }
+  .brand-line { display: flex; align-items: center; gap: 10px; }
+  header.page h1 { margin: 0; font-size: 20px; font-weight: 650; }
+  header.page p { margin: 5px 0 0; font-size: 12.5px; color: #d0dcda; }
+  .prototype-label { padding: 2px 7px; border: 1px solid #72968f; border-radius: 3px; color: #d3ebe5; font-size: 11px; }
+  main { max-width: none; margin: 0; padding: 0; min-width: 0; }
+  section.panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    padding: 14px 18px 16px;
+    margin-bottom: 12px;
+  }
+  section.panel > h2 {
+    margin: 0 0 12px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink);
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 8px;
+  }
+  section.panel > h3 { margin: 16px 0 8px; font-size: 13px; color: var(--ink-dim); font-weight: 600; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { border: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top; }
+  th { background: #eef2f7; font-weight: 600; white-space: nowrap; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  code, pre, .mono { font-family: Consolas, "Courier New", monospace; }
+  pre.report {
+    background: #fbfcfd;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 12px;
+    max-height: 560px;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: 12.5px;
+    line-height: 1.5;
+    margin: 0;
+  }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .slot { border: 1px solid var(--line); border-radius: 4px; padding: 10px 12px; background: #fafbfc; }
+  .slot h3 { margin: 0 0 8px; font-size: 13px; color: var(--ink); }
+  label.field { display: block; margin-bottom: 8px; font-size: 12.5px; color: var(--ink-dim); }
+  label.field span.lbl { display: block; margin-bottom: 3px; }
+  select, input[type="text"], input[type="number"], input[type="file"] {
+    width: 100%; min-height: 38px; padding: 7px 9px; border: 1px solid #bdcbc8; border-radius: 4px;
+    font-size: 13px; background: #fff; color: var(--ink); font-family: inherit;
+  }
+  select:focus, input:focus { outline: 2px solid #9ccbc1; outline-offset: 1px; border-color: var(--accent); }
+  button {
+    background: var(--header); color: #fff; border: 0; border-radius: 4px;
+    min-height: 40px; padding: 9px 18px; font-size: 14px; cursor: pointer; font-family: inherit;
+  }
+  button:hover:not(:disabled) { background: #31484f; }
+  button:focus-visible { outline: 3px solid #8fc3b7; outline-offset: 2px; }
+  button.secondary { color: var(--ink); background: #edf3f1; border: 1px solid #cad8d4; }
+  button.secondary:hover:not(:disabled) { background: #e1ece8; }
+  button:disabled { background: #93a4b5; cursor: not-allowed; }
+  .hint { font-size: 12px; color: var(--ink-dim); margin: 2px 0 0; }
+  .empty { color: var(--ink-dim); font-style: normal; font-size: 13px; }
+  .banner { border-left: 4px solid var(--line); padding: 10px 14px; border-radius: 3px; margin-bottom: 12px; background: #f7f9f8; }
+  .banner h2 { margin: 0 0 4px; font-size: 15px; }
+  .banner p { margin: 0; font-size: 13px; }
+  .banner.ok { border-color: var(--ok); background: #eef7f1; }
+  .banner.ok h2 { color: var(--ok); }
+  .banner.warn { border-color: var(--warn); background: #fdf6e8; }
+  .banner.warn h2 { color: var(--warn); }
+  .banner.err { border-color: var(--err); background: #fdefef; }
+  .banner.err h2 { color: var(--err); }
+  .tag { display: inline-block; padding: 1px 7px; border-radius: 3px; font-size: 12px; border: 1px solid var(--line); background: #eef3f1; margin-right: 6px; }
+  .tag.on { border-color: var(--ok); color: var(--ok); background: #eef7f1; }
+  .tag.off { border-color: var(--err); color: var(--err); background: #fdefef; }
+  .tag.warn { border-color: var(--warn); color: var(--warn); background: #fdf6e8; }
+  ul.plain { margin: 4px 0 0; padding-left: 20px; }
+  ul.plain li { margin-bottom: 3px; }
+  ul.warnlist li { color: #8a5a09; }
+  .kv { display: grid; grid-template-columns: 150px 1fr; gap: 4px 10px; font-size: 13px; margin: 0; }
+  .kv dt { color: var(--ink-dim); }
+  .kv dd { margin: 0; word-break: break-all; }
+  .spinner {
+    display: inline-block; width: 13px; height: 13px; margin-right: 8px; vertical-align: -2px;
+    border: 2px solid #b9cbc6; border-top-color: var(--accent); border-radius: 50%;
+    animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-size: 13px; color: var(--accent); margin-left: 12px; }
+  .chart { width: 100%; height: auto; display: block; }
+  .chart-scroll { overflow-x: auto; }
+  .chart .grid { stroke: #e3e9f0; stroke-width: 1; }
+  .chart .axis { stroke: #9fb0c2; stroke-width: 1; }
+  .chart .axis-label { fill: #6b7c8e; font-size: 11px; font-family: inherit; }
+  .chart .bar-normal { fill: var(--normal); }
+  .chart .bar-abnormal { fill: var(--abnormal); }
+  .chart .stem { stroke-width: 2; }
+  .chart .stem-normal { stroke: var(--normal); }
+  .chart .stem-abnormal { stroke: var(--abnormal); }
+  .chart .panel-title { fill: #33465c; font-size: 12px; font-family: inherit; }
+  .chart .curve-normal { fill: none; stroke: var(--normal); stroke-width: 1.3; }
+  .chart .curve-abnormal { fill: none; stroke: var(--abnormal); stroke-width: 1.3; }
+  .chart-wrap { position: relative; -webkit-user-select: none; user-select: none; }
+  .chart-wrap .chart { cursor: crosshair; }
+  .chart .chart-sel { fill: rgba(47, 125, 111, 0.14); stroke: #2f7d6f; stroke-width: 1; stroke-dasharray: 3 3; pointer-events: none; }
+  .chart-reset { position: absolute; top: 0; right: 0; font: inherit; font-size: 12px; line-height: 1.4; padding: 2px 9px; color: var(--ink-dim); background: #fff; border: 1px solid var(--line); border-radius: 6px; cursor: pointer; }
+  .chart-reset:hover { color: var(--ink); border-color: #9fb0c2; }
+  .audio-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px 16px; margin: 4px 0 2px; }
+  .audio-item { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+  .audio-item .audio-name { display: block; font-size: 12px; color: var(--ink-dim); margin-bottom: 5px; }
+  .audio-item audio { width: 100%; height: 32px; }
+  .legend { font-size: 12px; color: var(--ink-dim); margin: 0 0 6px; }
+  .legend i { display: inline-block; width: 11px; height: 11px; margin-right: 5px; vertical-align: -1px; }
+  .scroll-x { overflow-x: auto; }
+  .mono-block { font-family: Consolas, "Courier New", monospace; font-size: 12px; word-break: break-all; }
+  #result { display: none; }
+  .cand-title { font-weight: 600; }
+  .sep { color: var(--ink-dim); margin: 0 5px; }
+  
+  .health-strip { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 9px; }
+  .health-item { display: flex; align-items: baseline; gap: 6px; font-size: 12px; min-width: 0; }
+  .health-item span { color: #9db3b0; }
+  .health-item strong { color: #fff; font-weight: 600; overflow-wrap: anywhere; }
+  .quick-row { display: flex; gap: 7px; flex-wrap: wrap; margin: 12px 0 3px; }
+  .quick-row button { min-height: 32px; padding: 5px 10px; font-size: 12px; }
+  .quick-label { font-size: 12px; color: var(--ink-dim); align-self: center; margin-right: 2px; }
+  .summary { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px 20px; align-items: start; border-top: 3px solid var(--accent); }
+  .summary h2 { margin: 0 0 6px; font-size: 18px; color: var(--ink); }
+  .summary-conclusion { margin: 0; font-size: 14px; line-height: 1.7; }
+  .summary-side { text-align: right; min-width: 120px; }
+  .summary-side span { display: block; color: var(--ink-dim); font-size: 11px; }
+  .summary-side strong { display: block; font-size: 15px; }
+  .summary-metrics { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 8px; padding-top: 10px; border-top: 1px solid var(--line); }
+  .metric { min-width: 0; }
+  .metric span { display: block; color: var(--ink-dim); font-size: 11px; }
+  .metric strong { display: block; font-size: 13px; overflow-wrap: anywhere; }
+  .report-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 12px; }
+  .form-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .form-error { color: var(--err); font-size: 12px; margin: 8px 0 0; }
+  .query-details { margin: 12px 0 4px; border-top: 1px solid var(--line); padding-top: 8px; }
+  .query-details summary { cursor: pointer; color: var(--ink-dim); font-size: 12px; }
+  .query-details p { margin: 6px 0; }
+
+  /* ---------------- Agent 执行时间线（真实 SSE 事件驱动，稳定尺寸） ---------------- */
+  .tl-session { font-size: 12px; color: var(--ink-dim); margin: 0 0 10px; word-break: break-all; }
+  .timeline { list-style: none; margin: 0; padding: 0; }
+  .tl-empty { color: var(--ink-dim); font-size: 13px; padding: 2px 0; }
+  .tl-item { position: relative; padding: 0 0 10px 26px; min-width: 0; }
+  .tl-item::before { content: ''; position: absolute; left: 8px; top: 7px; bottom: -3px; width: 2px; background: var(--line); }
+  .tl-item:last-child::before { display: none; }
+  .tl-item::after { content: ''; position: absolute; left: 4px; top: 7px; width: 10px; height: 10px; border-radius: 50%; background: #b8c7c2; border: 2px solid #fff; }
+  .tl-item.tl-running::after { background: var(--accent); }
+  .tl-item.tl-completed::after { background: var(--ok); }
+  .tl-item.tl-failed::after { background: var(--err); }
+  .tl-item.tl-skipped::after { background: #98a6ab; }
+  .tl-item.tl-fallback::after { background: var(--warn); }
+  .tl-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-height: 24px; }
+  .tl-badge {
+    flex: 0 0 auto; display: inline-block; width: 52px; text-align: center; font-size: 11px;
+    padding: 1px 0; border-radius: 3px; border: 1px solid var(--line); background: #f1f4f3; color: var(--ink-dim);
+  }
+  .tl-item.tl-running .tl-badge { border-color: var(--accent); color: var(--accent); background: #eef6f3; }
+  .tl-item.tl-completed .tl-badge { border-color: var(--ok); color: var(--ok); background: #eef7f1; }
+  .tl-item.tl-failed .tl-badge { border-color: var(--err); color: var(--err); background: #fdefef; }
+  .tl-item.tl-skipped .tl-badge { color: #6d7c81; background: #f1f3f4; }
+  .tl-item.tl-fallback .tl-badge { border-color: var(--warn); color: var(--warn); background: #fdf6e8; }
+  .tl-label { font-weight: 600; font-size: 13px; }
+  .tl-node { color: var(--ink-dim); font-size: 11px; word-break: break-all; min-width: 0; }
+  .tl-tplus { margin-left: auto; color: var(--ink-dim); font-size: 11px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .tl-summary { font-size: 12.5px; margin: 2px 0 0; }
+  details.tl-detail { margin: 4px 0 0; }
+  details.tl-detail > summary { cursor: pointer; font-size: 12px; color: var(--ink-dim); list-style: none; }
+  details.tl-detail > summary::-webkit-details-marker { display: none; }
+  details.tl-detail > summary::before { content: '▸ '; color: var(--accent); }
+  details.tl-detail[open] > summary::before { content: '▾ '; }
+  .tl-tools { list-style: none; margin: 4px 0 0; padding: 0; }
+  .tl-tool { font-size: 12.5px; padding: 2px 0; word-break: break-word; }
+  .tl-tool .t-name { margin-right: 6px; }
+  .tl-tool.tl-tool-done .t-text { color: var(--ink-dim); }
+  .tl-tool.tl-tool-failed { color: var(--err); }
+  .tl-warn { font-size: 12px; color: #8a5a09; background: #fdf6e8; border-left: 3px solid var(--warn); padding: 4px 9px; margin: 5px 0; border-radius: 2px; word-break: break-word; }
+  .tl-branch { font-size: 12px; color: #245a52; background: #eef6f3; border-left: 3px solid var(--accent); padding: 4px 9px; margin: 5px 0; border-radius: 2px; word-break: break-word; }
+
+  /* ---------------- 决策依据 / 受控追问 ---------------- */
+  #reasoning-left > h3:first-child, #reasoning-right > h3:first-child { margin-top: 0; }
+  .ask-row { display: flex; gap: 8px; align-items: stretch; flex-wrap: wrap; }
+  .ask-row select { flex: 1 1 280px; min-width: 0; }
+  .qa-item { border-top: 1px dashed var(--line); padding: 10px 0 4px; margin-top: 10px; }
+  .qa-item:first-child { border-top: 0; margin-top: 2px; }
+  .qa-q { margin: 0 0 6px; font-weight: 600; font-size: 13px; }
+  pre.qa-answer {
+    background: #fbfcfd; border: 1px solid var(--line); border-radius: 4px; padding: 10px 12px;
+    margin: 0 0 4px; max-height: 420px; overflow: auto; white-space: pre-wrap; word-break: break-word;
+    font-size: 12.5px; line-height: 1.55;
+  }
+  .qa-a.qa-nosupport pre.qa-answer { border-color: #e6d7b6; background: #fcf8ed; }
+  .qa-a-label { margin: 0 0 4px; font-size: 12px; color: var(--ink-dim); }
+  .qa-a.qa-nosupport .qa-a-label { color: var(--warn); font-weight: 600; }
+  .qa-meta { font-size: 12px; color: var(--ink-dim); margin: 6px 0 0; }
+  .qa-meta .tag { margin: 2px 4px 2px 0; }
+
+  /* ---------------- 结果工作区：卡片目录 + 切换视图 ---------------- */
+  .card-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 12px 0; }
+  button.nav-card {
+    display: flex; flex-direction: column; align-items: flex-start; gap: 3px;
+    width: 100%; min-height: 62px; padding: 10px 12px; text-align: left;
+    background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 5px;
+  }
+  button.nav-card:hover:not(:disabled) { background: #f4faf8; border-color: var(--accent); }
+  button.nav-card.is-active { background: #eef6f3; border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+  .nav-card-title { font-size: 13.5px; font-weight: 600; }
+  .nav-card-meta { font-size: 11.5px; color: var(--ink-dim); line-height: 1.45; }
+  button.nav-card.is-active .nav-card-meta { color: #3d7d70; }
+  .view-panel { display: none; }
+  .view-panel.is-active { display: block; }
+  .view-sub { margin: 16px 0 8px; font-size: 13px; color: var(--ink-dim); font-weight: 600; }
+  .view-sub:first-child { margin-top: 0; }
+  .foot-note { color: var(--ink-dim); font-size: 11.5px; margin: 16px 0 0; }
+  @media (max-width: 1000px) { .card-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (max-width: 720px) { .card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+  @media (max-width: 620px) {
+    header.page { padding: 15px 16px; }
+    .shell { padding: 10px 10px 30px; }
+    section.panel { padding: 12px; }
+    .kv { grid-template-columns: 95px minmax(0, 1fr); }
+    .chart-scroll .chart { min-width: 640px; }
+    .summary { grid-template-columns: 1fr; }
+    .summary-side { text-align: left; }
+    .summary-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    table { min-width: 650px; }
+    .brand-line { align-items: flex-start; flex-direction: column; gap: 4px; }
+    .tl-head { flex-wrap: wrap; }
+    .tl-tplus { margin-left: 0; width: 100%; }
+    .ask-row { flex-direction: column; }
+    .ask-row button { width: 100%; }
+    pre.qa-answer { max-height: 320px; }
+  }
+
+  /* ---------------- 三栏工作台：左侧目录/会话 · 中间输入与结果 · 右侧模型对话 ---------------- */
+  .shell {
+    display: grid;
+    grid-template-columns: 250px minmax(0, 1fr) 320px;
+    gap: 12px;
+    align-items: start;
+    max-width: 1680px;
+    margin: 0 auto;
+    padding: 14px 16px 48px;
+  }
+  .shell > main { min-width: 0; }
+  .rail {
+    min-width: 0;
+    align-self: start;
+    position: sticky;
+    top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: calc(100vh - 24px);
+  }
+  .rail-left { overflow-y: auto; }
+  .rail-block { background: var(--panel); border: 1px solid var(--line); border-radius: 5px; padding: 10px 12px; }
+  .rail-title {
+    margin: 0 0 8px; font-size: 13px; font-weight: 600; color: var(--ink);
+    border-bottom: 1px solid var(--line); padding-bottom: 6px;
+  }
+  #card-nav { display: flex; flex-direction: column; gap: 7px; margin: 0; }
+  #card-nav button.nav-card { min-height: 0; padding: 7px 10px; gap: 1px; }
+  #session-list { display: flex; flex-direction: column; gap: 6px; }
+  button.session-item {
+    display: flex; flex-direction: column; gap: 2px; width: 100%; min-height: 0;
+    padding: 7px 9px; text-align: left; background: var(--panel); color: var(--ink);
+    border: 1px solid var(--line); border-radius: 5px;
+  }
+  button.session-item:hover:not(:disabled) { background: #f4faf8; border-color: var(--accent); }
+  button.session-item.is-active { background: #eef6f3; border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+  .session-label { font-size: 12.5px; font-weight: 600; overflow-wrap: anywhere; }
+  .session-meta { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--ink-dim); }
+  .sess-tag { padding: 0 6px; border-radius: 3px; border: 1px solid var(--line); background: #eef3f1; white-space: nowrap; }
+  .sess-tag.s-run { border-color: var(--accent); color: var(--accent); background: #eef6f3; }
+  .sess-tag.s-ok { border-color: var(--ok); color: var(--ok); background: #eef7f1; }
+  .sess-tag.s-warn { border-color: var(--warn); color: var(--warn); background: #fdf6e8; }
+  .sess-tag.s-err { border-color: var(--err); color: var(--err); background: #fdefef; }
+  .sess-time { margin-left: auto; font-variant-numeric: tabular-nums; }
+
+  .chat-panel { display: flex; flex-direction: column; }
+  .chat-log {
+    display: flex; flex-direction: column; gap: 8px; min-height: 110px;
+    max-height: calc(100vh - 250px); overflow-y: auto; overflow-x: hidden;
+  }
+  .chat-empty { color: var(--ink-dim); font-size: 12.5px; margin: 0; }
+  .chat-msg { border: 1px solid var(--line); border-radius: 5px; padding: 7px 9px; background: #fafbfc; min-width: 0; }
+  .chat-msg.chat-user { background: #eef6f3; border-color: #cfe4de; }
+  .chat-text { margin: 0; font-size: 12.5px; white-space: pre-wrap; word-break: break-word; overflow-wrap: anywhere; }
+  .chat-src { margin: 5px 0 0; font-size: 11px; color: var(--ink-dim); }
+  .chat-msg.chat-nosupport { border-color: #e6d7b6; background: #fcf8ed; }
+  .chat-msg.chat-nosupport .chat-src { color: var(--warn); font-weight: 600; }
+  .chat-msg.chat-error { border-color: #e6c9c9; background: #fdefef; }
+  .chat-msg.chat-error .chat-src { color: var(--err); }
+  .chat-form { display: flex; gap: 6px; margin-top: 8px; }
+  .chat-form input { flex: 1 1 auto; width: auto; min-width: 0; }
+  .chat-form button { flex: 0 0 auto; min-height: 38px; padding: 7px 14px; font-size: 13px; }
+
+  @media (max-width: 1100px) {
+    .shell { grid-template-columns: minmax(0, 1fr); padding: 12px 12px 40px; }
+    .rail { position: static; max-height: none; overflow: visible; }
+    #card-nav { flex-direction: row; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
+    #card-nav button.nav-card { flex: 0 0 auto; width: auto; max-width: 230px; }
+    .chat-log { max-height: 340px; }
+  }
+</style>
+</head>
+<body>
+<header class="page">
+  <div class="header-inner">
+    <div class="brand-line"><h1>工业设备故障诊断 Agent 工作台</h1><span class="prototype-label">公开数据原型</span></div>
+    <div class="health-strip" id="health-box"><div class="health-item"><span>接口</span><strong>正在连接…</strong></div></div>
+  </div>
+</header>
+
+<div class="shell">
+  <aside class="rail rail-left">
+    <section class="rail-block">
+      <h2 class="rail-title">结果目录</h2>
+      <nav class="card-grid" id="card-nav" aria-label="结果目录">
+        <button class="nav-card is-active" type="button" data-view="process">
+          <span class="nav-card-title">执行过程</span><span class="nav-card-meta" id="nav-meta-process">等待开始</span>
+        </button>
+        <button class="nav-card" type="button" data-view="reasoning">
+          <span class="nav-card-title">Agent 决策依据</span><span class="nav-card-meta" id="nav-meta-reasoning">—</span>
+        </button>
+        <button class="nav-card" type="button" data-view="evidence">
+          <span class="nav-card-title">关键证据</span><span class="nav-card-meta" id="nav-meta-evidence">—</span>
+        </button>
+        <button class="nav-card" type="button" data-view="signal">
+          <span class="nav-card-title">信号分析</span><span class="nav-card-meta" id="nav-meta-signal">波形 / 幅度谱 / 包络谱</span>
+        </button>
+        <button class="nav-card" type="button" data-view="knowledge">
+          <span class="nav-card-title">知识检索与来源</span><span class="nav-card-meta" id="nav-meta-knowledge">—</span>
+        </button>
+        <button class="nav-card" type="button" data-view="quality">
+          <span class="nav-card-title">数据质量与复核</span><span class="nav-card-meta" id="nav-meta-quality">—</span>
+        </button>
+        <button class="nav-card" type="button" data-view="report">
+          <span class="nav-card-title">完整报告</span><span class="nav-card-meta" id="nav-meta-report">—</span>
+        </button>
+        <button class="nav-card" type="button" data-view="ask">
+          <span class="nav-card-title">诊断追问（受控）</span><span class="nav-card-meta" id="nav-meta-ask">完成诊断后可用</span>
+        </button>
+      </nav>
+    </section>
+    <section class="rail-block">
+      <h2 class="rail-title">会话窗口</h2>
+      <div id="session-list"></div>
+    </section>
+  </aside>
+
+  <main>
+  <section class="panel">
+    <h2>分析输入</h2>
+    <div class="grid-2">
+      <div class="slot">
+        <h3>正常（基线）样本</h3>
+        <label class="field"><span class="lbl">内置样例</span>
+          <select id="normal_sample"><option value="">（不使用内置样例）</option></select>
+        </label>
+        <label class="field"><span class="lbl">上传 CSV 文件（优先于样例，最大 20 MB）</span>
+          <input type="file" id="normal_file" accept=".csv">
+        </label>
+      </div>
+      <div class="slot">
+        <h3>异常样本</h3>
+        <label class="field"><span class="lbl">内置样例</span>
+          <select id="abnormal_sample"><option value="">（不使用内置样例）</option></select>
+        </label>
+        <label class="field"><span class="lbl">上传 CSV 文件（优先于样例，最大 20 MB）</span>
+          <input type="file" id="abnormal_file" accept=".csv">
+        </label>
+      </div>
+    </div>
+
+    <div class="quick-row" aria-label="一键演示（自动填入样例并开始分析）">
+      <span class="quick-label">一键演示</span>
+      <button class="secondary preset-btn" type="button" data-normal="normal_1797" data-abnormal="outer_race_1797">正常 vs 外圈故障</button>
+      <button class="secondary preset-btn" type="button" data-normal="normal_1797" data-abnormal="inner_race_1797">正常 vs 内圈故障</button>
+      <button class="secondary preset-btn" type="button" data-normal="normal_1797" data-abnormal="ball_1797">已知误判案例</button>
+      <button class="secondary preset-btn" type="button" data-normal="normal_1797" data-abnormal="normal_1797">无显著变化</button>
+    </div>
+
+    <div class="grid-4" style="margin-top:14px">
+      <label class="field"><span class="lbl">采样率 (Hz) *</span>
+        <input type="number" id="sampling_rate" min="0" step="1" placeholder="例如 12000">
+      </label>
+      <label class="field"><span class="lbl">转速 (rpm) *</span>
+        <input type="number" id="rotation_speed" min="0" step="1" placeholder="例如 1797">
+      </label>
+      <label class="field"><span class="lbl">测点 (sensor_position)</span>
+        <input type="text" id="sensor_position" placeholder="例如 drive_end">
+      </label>
+      <label class="field"><span class="lbl">设备类型 (device_type)</span>
+        <input type="text" id="device_type" placeholder="例如 bearing">
+      </label>
+    </div>
+
+    <div class="form-actions">
+      <button id="run-btn" type="button">开始分析</button>
+      <button id="reset-btn" class="secondary" type="button">清空输入</button>
+      <span id="loading" class="loading-text" style="display:none">
+        <span class="spinner"></span><span id="loading-message" role="status">正在启动诊断…</span>
+      </span>
+    </div>
+    <p id="form-error" class="form-error" role="alert"></p>
+  </section>
+
+  <div id="result">
+    <div id="status-banner"></div>
+
+    <section class="panel summary" id="summary-panel" aria-live="polite">
+      <div><h2 id="summary-title">分析结论</h2><p id="summary-conclusion" class="summary-conclusion"></p></div>
+      <div class="summary-side"><span>置信等级</span><strong id="summary-confidence">-</strong></div>
+      <div class="summary-metrics" id="summary-metrics"></div>
+    </section>
+
+    <section class="panel view-panel is-active" data-view="process">
+      <div class="tl-session" id="tl-session"></div>
+      <ol class="timeline" id="timeline-list"></ol>
+      <h3 class="view-sub">执行统计与告警（trace）</h3>
+      <div id="trace-box"></div>
+    </section>
+
+    <section class="panel view-panel" data-view="reasoning">
+      <div class="grid-2">
+        <div id="reasoning-left"></div>
+        <div id="reasoning-right"></div>
+      </div>
+    </section>
+
+    <section class="panel view-panel" data-view="evidence">
+      <div class="scroll-x" id="feature-box"></div>
+      <div id="evidence-box"></div>
+    </section>
+
+    <section class="panel view-panel" data-view="signal">
+      <div id="series-box"></div>
+      <h3 class="view-sub">频带能量变化</h3><div id="band-box"></div>
+      <h3 class="view-sub">频谱峰值对比</h3><div id="spectrum-box"></div>
+      <h3 class="view-sub">包络谱特征频率能量</h3><div id="envelope-box"></div>
+    </section>
+
+    <section class="panel view-panel" data-view="knowledge">
+      <h3 class="view-sub">候选故障类型</h3><div class="scroll-x" id="candidates-box"></div>
+      <h3 class="view-sub">知识来源</h3><div class="scroll-x" id="sources-box"></div>
+    </section>
+
+    <section class="panel view-panel" data-view="quality">
+      <h3 class="view-sub">数据质量</h3><div id="quality-box"></div>
+      <h3 class="view-sub">建议复核项</h3><div id="review-box"></div>
+      <h3 class="view-sub">分析对象与输入信息</h3><dl class="kv" id="device-box"></dl>
+      <div id="error-panel" style="display:none"><h3 class="view-sub">错误信息</h3><dl class="kv" id="error-box"></dl></div>
+    </section>
+
+    <section class="panel view-panel" data-view="report">
+      <div class="report-actions"><button id="download-report" class="secondary" type="button" disabled>下载分析报告 (.md)</button><span id="report-mode" class="hint"></span></div>
+      <pre class="report" id="report-box"></pre>
+      <div id="report-extra"></div>
+    </section>
+
+    <section class="panel view-panel" data-view="ask">
+      <div class="ask-row">
+        <select id="ask-question" disabled>
+          <option value="为什么判断为这个故障类型？">为什么判断为这个故障类型？</option>
+          <option value="哪些证据最关键？">哪些证据最关键？</option>
+          <option value="为什么置信度只有低或中？">为什么置信度只有低或中？</option>
+          <option value="为什么没有确认故障？">为什么没有确认故障？</option>
+          <option value="这个判断可能错在哪里？">这个判断可能错在哪里？</option>
+          <option value="还需要采集什么数据？">还需要采集什么数据？</option>
+          <option value="生成一份完整的分析报告。">生成一份完整的分析报告</option>
+        </select>
+        <button id="ask-btn" type="button" disabled>基于本次会话提问</button>
+      </div>
+      <p class="hint" id="ask-hint">完成一次诊断后即可提问。</p>
+      <div id="ask-output"></div>
+    </section>
+
+    <p class="foot-note">本工具基于 CWRU 公开数据与有限规则构建，仅用于技术演示与辅助分析，结果不构成设备确诊。</p>
+  </div>
+</main>
+
+  <aside class="rail rail-right">
+    <section class="rail-block chat-panel">
+      <h2 class="rail-title">与模型对话</h2>
+      <div class="chat-log" id="chat-log"></div>
+      <div class="chat-form">
+        <input type="text" id="chat-input" maxlength="300" placeholder="就本次诊断提问" disabled>
+        <button id="chat-send" type="button" disabled>发送</button>
+      </div>
+    </section>
+  </aside>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var $ = function (id) { return document.getElementById(id); };
+  var currentReport = '';
+  var busy = false;
+  var loadingTimer = null;
+  function confidenceLabel(level) {
+    return ({ high: '高', medium: '中', low: '低' })[level] || level || '未提供';
+  }
+
+  // ---------------------------------------------------------------- 工具
+  function esc(value) {
+    if (value === null || value === undefined) return '';
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+  function isNum(v) {
+    return typeof v === 'number' && isFinite(v);
+  }
+  function num(v, digits) {
+    if (v === null || v === undefined || v === '') return '-';
+    var n = Number(v);
+    if (!isFinite(n)) return esc(v);
+    return n.toFixed(digits === undefined ? 4 : digits);
+  }
+  function sig(v) {
+    if (!isFinite(v)) return '-';
+    var a = Math.abs(v);
+    if (a === 0) return '0';
+    if (a >= 1000 || a < 0.01) return v.toExponential(2);
+    return v.toPrecision(3);
+  }
+  function sci(v) {
+    var n = Number(v);
+    if (!isFinite(n)) return '-';
+    return n === 0 ? '0' : n.toExponential(2);
+  }
+  function timesText(r) {
+    if (r === null || r === undefined || r === '') return '-';
+    var n = Number(r);
+    if (!isFinite(n)) return '-';
+    if (n >= 100) return n.toFixed(0) + ' 倍';
+    if (n >= 10) return n.toFixed(1) + ' 倍';
+    return n.toFixed(2) + ' 倍';
+  }
+  function pctText(r) {
+    if (r === null || r === undefined || r === '') return '-';
+    var n = Number(r);
+    if (!isFinite(n)) return '-';
+    var p = (n - 1) * 100;
+    return (p >= 0 ? '+' : '') + p.toFixed(0) + '%';
+  }
+  function bullets(items) {
+    var list = (items || []).filter(function (x) { return x !== null && x !== undefined && String(x).trim() !== ''; });
+    if (!list.length) return '<p class="empty">（无）</p>';
+    return '<ul class="plain">' + list.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>';
+  }
+  function warnBullets(items) {
+    var list = (items || []).filter(function (x) { return String(x || '').trim() !== ''; });
+    if (!list.length) return '<p class="empty">（无）</p>';
+    return '<ul class="plain warnlist">' + list.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>';
+  }
+  function legend(entries) {
+    return '<p class="legend">' + entries.map(function (e) {
+      return '<i style="background:' + e.color + '"></i>' + esc(e.name);
+    }).join('<span class="sep"></span>') + '</p>';
+  }
+
+  // ------------------------------------------------------------ 手绘图表
+  // 分组柱状图（对数纵轴：能量类数值跨数量级，线性刻度会把小频带压成 0）
+  function groupedBarChart(categories, series, unitText) {
+    if (!categories.length) return '<p class="empty">无数据</p>';
+    var maxV = 0;
+    series.forEach(function (s) {
+      s.values.forEach(function (v) { if (isNum(v) && v > maxV) maxV = v; });
+    });
+    if (!(maxV > 0)) return '<p class="empty">无有效数值</p>';
+
+    var width = 880, padL = 84, padR = 24, padT = 30, padB = 96;
+    var plotW = width - padL - padR, plotH = 250, height = padT + plotH + padB;
+    var logMax = Math.log10(1 + maxV);
+    var yOf = function (v) {
+      if (!isNum(v) || v <= 0) return padT + plotH;
+      return padT + plotH - plotH * (Math.log10(1 + v) / logMax);
+    };
+    var n = categories.length;
+    var groupW = plotW / n;
+    var barW = Math.min(34, (groupW * 0.66) / series.length);
+
+    var out = ['<svg viewBox="0 0 ' + width + ' ' + height + '" class="chart" role="img">'];
+    var i, j, frac, y, tick, val;
+    for (i = 0; i <= 4; i++) {
+      frac = i / 4;
+      y = padT + plotH - plotH * frac;
+      val = Math.pow(10, frac * logMax) - 1;
+      out.push('<line class="grid" x1="' + padL + '" y1="' + y.toFixed(1) + '" x2="' + (padL + plotW) + '" y2="' + y.toFixed(1) + '"/>');
+      out.push('<text class="axis-label" x="' + (padL - 8) + '" y="' + (y + 4).toFixed(1) + '" text-anchor="end">' + esc(sig(val)) + '</text>');
+    }
+    out.push('<line class="axis" x1="' + padL + '" y1="' + (padT + plotH) + '" x2="' + (padL + plotW) + '" y2="' + (padT + plotH) + '"/>');
+
+    for (i = 0; i < n; i++) {
+      var center = padL + groupW * (i + 0.5);
+      var totalW = barW * series.length;
+      for (j = 0; j < series.length; j++) {
+        var v = series[j].values[i];
+        var top = yOf(v);
+        var x = center - totalW / 2 + j * barW;
+        out.push('<rect class="' + series[j].cls + '" x="' + x.toFixed(1) + '" y="' + top.toFixed(1) + '" width="' + barW.toFixed(1) + '" height="' + Math.max(0, padT + plotH - top).toFixed(1) + '" rx="2">');
+        out.push('<title>' + esc(categories[i]) + ' · ' + esc(series[j].name) + ' = ' + esc(isNum(v) ? sig(v) : String(v === null || v === undefined ? '-' : v)) + '</title>');
+        out.push('</rect>');
+      }
+      var lx = center, ly = padT + plotH + 16;
+      out.push('<text class="axis-label" x="' + lx.toFixed(1) + '" y="' + ly + '" text-anchor="end" transform="rotate(-28 ' + lx.toFixed(1) + ' ' + ly + ')">' + esc(categories[i]) + '</text>');
+    }
+    var lx2 = padL + plotW, ly2 = padT + plotH + 82;
+    out.push('<text class="axis-label" x="' + lx2 + '" y="' + ly2 + '" text-anchor="end">' + esc(unitText || '') + '</text>');
+    out.push('<text class="axis-label" x="' + padL + '" y="' + (padT - 12) + '">纵轴为对数刻度</text>');
+    out.push('</svg>');
+
+    return legend([
+      { name: series[0].name, color: '#2f7d6f' },
+      { name: series[1].name, color: '#b4553a' }
+    ]) + '<div class="chart-scroll">' + out.join('') + '</div>';
+  }
+
+  // 频谱峰值：共用频率轴与幅值刻度，上下两栏分别画正常 / 异常的峰值谱线
+  function spectrumStemChart(normalPeaks, abnormalPeaks) {
+    var np = (normalPeaks || []).filter(function (p) { return p && isNum(Number(p.frequency)); });
+    var ap = (abnormalPeaks || []).filter(function (p) { return p && isNum(Number(p.frequency)); });
+    if (!np.length && !ap.length) return '<p class="empty">无频谱峰值数据</p>';
+
+    var all = np.concat(ap);
+    var maxF = 0, maxA = 0;
+    all.forEach(function (p) {
+      if (Number(p.frequency) > maxF) maxF = Number(p.frequency);
+      if (Number(p.amplitude) > maxA) maxA = Number(p.amplitude);
+    });
+    if (!(maxF > 0)) return '<p class="empty">无有效频率数据</p>';
+    var fMax = maxF * 1.08;
+    var aMax = (maxA > 0 ? maxA : 1) * 1.08;
+
+    var width = 880, padL = 92, padR = 26, padT = 34, padB = 52;
+    var panelH = 132, gap = 52;
+    var plotW = width - padL - padR;
+    var height = padT + panelH * 2 + gap + padB;
+
+    function xOf(f) { return padL + plotW * (Number(f) || 0) / fMax; }
+    function hOf(a) { return panelH * (Number(a) || 0) / aMax; }
+
+    var out = ['<svg viewBox="0 0 ' + width + ' ' + height + '" class="chart" role="img">'];
+
+    var panels = [
+      { title: '正常样本频谱峰值', peaks: np, baseline: padT + panelH, cls: 'stem-normal', color: '#2f7d6f' },
+      { title: '异常样本频谱峰值', peaks: ap, baseline: padT + panelH + gap + panelH, cls: 'stem-abnormal', color: '#b4553a' }
+    ];
+
+    panels.forEach(function (panel) {
+      var base = panel.baseline;
+      var top = base - panelH;
+      out.push('<text class="panel-title" x="' + padL + '" y="' + (top - 8) + '">' + esc(panel.title) + '</text>');
+      // 幅值刻度
+      [0, 0.5, 1].forEach(function (f) {
+        var y = base - panelH * f;
+        out.push('<line class="grid" x1="' + padL + '" y1="' + y.toFixed(1) + '" x2="' + (padL + plotW) + '" y2="' + y.toFixed(1) + '"/>');
+        out.push('<text class="axis-label" x="' + (padL - 8) + '" y="' + (y + 4).toFixed(1) + '" text-anchor="end">' + esc(sig(aMax * f)) + '</text>');
+      });
+      out.push('<line class="axis" x1="' + padL + '" y1="' + base + '" x2="' + (padL + plotW) + '" y2="' + base + '"/>');
+      panel.peaks.forEach(function (p) {
+        var x = xOf(p.frequency);
+        var h = hOf(p.amplitude);
+        var y = base - h;
+        out.push('<line class="stem ' + panel.cls + '" x1="' + x.toFixed(1) + '" y1="' + base + '" x2="' + x.toFixed(1) + '" y2="' + y.toFixed(1) + '">');
+        out.push('<title>' + esc(num(p.frequency, 2)) + ' Hz · 幅值 ' + esc(sig(Number(p.amplitude))) + '</title>');
+        out.push('</line>');
+        out.push('<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="2.6" fill="' + panel.color + '"></circle>');
+      });
+    });
+
+    // 频率轴刻度
+    var axisY = padT + panelH * 2 + gap;
+    for (var i = 0; i <= 5; i++) {
+      var fv = fMax * i / 5;
+      var x = padL + plotW * i / 5;
+      out.push('<line class="axis" x1="' + x.toFixed(1) + '" y1="' + axisY + '" x2="' + x.toFixed(1) + '" y2="' + (axisY + 5) + '"/>');
+      out.push('<text class="axis-label" x="' + x.toFixed(1) + '" y="' + (axisY + 18) + '" text-anchor="middle">' + esc(num(fv, 0)) + '</text>');
+    }
+    out.push('<text class="axis-label" x="' + (padL + plotW) + '" y="' + (axisY + 36) + '" text-anchor="end">频率 (Hz)</text>');
+    out.push('</svg>');
+
+    return legend([
+      { name: '正常样本峰值', color: '#2f7d6f' },
+      { name: '异常样本峰值', color: '#b4553a' }
+    ]) + '<div class="chart-scroll">' + out.join('') + '</div>';
+  }
+
+  // 原始信号曲线：时域波形（min/max 包络）、幅度谱、包络谱，正常与异常同图叠加
+  var SERIES_VB_W = 880, SERIES_PAD_L = 84, SERIES_PAD_R = 24, SERIES_PAD_T = 26, SERIES_PAD_B = 46;
+  var SERIES_PLOT_W = SERIES_VB_W - SERIES_PAD_L - SERIES_PAD_R;
+  var seriesCharts = [], seriesDrag = null;
+
+  function curvePoints(xs, ys, xOf, yOf, view) {
+    var pts = [];
+    for (var i = 0; i < ys.length; i++) {
+      if (!isNum(ys[i]) || !isNum(xs[i])) continue;
+      if (view && (xs[i] < view.lo || xs[i] > view.hi)) continue;
+      pts.push(xOf(xs[i]).toFixed(1) + ',' + yOf(ys[i]).toFixed(1));
+    }
+    return pts.join(' ');
+  }
+
+  function curveRange(traces) {
+    var xMax = 0;
+    traces.forEach(function (t) {
+      t.xs.forEach(function (v) { if (isNum(v) && v > xMax) xMax = v; });
+    });
+    return { lo: 0, hi: xMax * 1.02 };
+  }
+
+  function seriesCurveChart(traces, opts, win) {
+    opts = opts || {};
+    var width = SERIES_VB_W, padL = SERIES_PAD_L, padT = SERIES_PAD_T, padB = SERIES_PAD_B;
+    var plotH = opts.plotH || 200;
+    var plotW = SERIES_PLOT_W, height = padT + plotH + padB;
+    var full = curveRange(traces);
+    if (!(full.hi > 0)) return '<p class="empty">无曲线数据</p>';
+    var view = (win && isNum(win.lo) && isNum(win.hi) && win.hi > win.lo) ? win : full;
+
+    var yMax = 0, yMin = 0, points = 0;
+    traces.forEach(function (t) {
+      t.ys.forEach(function (v, i) {
+        if (!isNum(v) || !isNum(t.xs[i]) || t.xs[i] < view.lo || t.xs[i] > view.hi) return;
+        points += 1;
+        if (v > yMax) yMax = v;
+        if (v < yMin) yMin = v;
+      });
+    });
+    if (!points) return '<p class="empty">该区间无数据点</p>';
+    if (opts.symmetric) {
+      var amp = Math.max(Math.abs(yMin), Math.abs(yMax)) * 1.05;
+      yMax = amp; yMin = -amp;
+    } else {
+      yMax = yMax * 1.05; yMin = Math.min(0, yMin);
+    }
+    if (!(yMax - yMin > 0)) {
+      if (!win) return '<p class="empty">曲线幅值为零</p>';
+      yMax += 1; yMin -= 1;
+    }
+
+    var span = view.hi - view.lo;
+    var xDig = span >= 20 ? 0 : (span >= 2 ? 1 : 2);
+    var xOf = function (v) { return padL + plotW * (v - view.lo) / span; };
+    var yOf = function (v) { return padT + plotH - plotH * (v - yMin) / (yMax - yMin); };
+
+    var out = ['<svg viewBox="0 0 ' + width + ' ' + height + '" class="chart" role="img">'];
+    var i, x, y;
+    for (i = 0; i <= 4; i++) {
+      y = yOf(yMin + (yMax - yMin) * i / 4);
+      out.push('<line class="grid" x1="' + padL + '" y1="' + y.toFixed(1) + '" x2="' + (padL + plotW) + '" y2="' + y.toFixed(1) + '"/>');
+      out.push('<text class="axis-label" x="' + (padL - 8) + '" y="' + (y + 4).toFixed(1) + '" text-anchor="end">' +
+        esc(sig(yMin + (yMax - yMin) * i / 4)) + '</text>');
+    }
+    out.push('<line class="axis" x1="' + padL + '" y1="' + padT + '" x2="' + padL + '" y2="' + (padT + plotH) + '"/>');
+    out.push('<line class="axis" x1="' + padL + '" y1="' + (padT + plotH) + '" x2="' + (padL + plotW) + '" y2="' + (padT + plotH) + '"/>');
+    for (i = 0; i <= 5; i++) {
+      x = padL + plotW * i / 5;
+      out.push('<line class="axis" x1="' + x.toFixed(1) + '" y1="' + (padT + plotH) + '" x2="' + x.toFixed(1) + '" y2="' + (padT + plotH + 5) + '"/>');
+      out.push('<text class="axis-label" x="' + x.toFixed(1) + '" y="' + (padT + plotH + 18) + '" text-anchor="middle">' +
+        esc(num(view.lo + span * i / 5, xDig)) + '</text>');
+    }
+    traces.forEach(function (t) {
+      var pts = curvePoints(t.xs, t.ys, xOf, yOf, view);
+      if (!pts) return;
+      out.push('<polyline class="' + t.cls + '" points="' + pts + '"><title>' + esc(t.name) + '</title></polyline>');
+    });
+    out.push('<text class="axis-label" x="' + (padL + plotW) + '" y="' + (padT + plotH + 36) + '" text-anchor="end">' + esc(opts.xLabel || '') + '</text>');
+    out.push('<text class="axis-label" x="' + (padL - 8) + '" y="' + (padT - 10) + '" text-anchor="end">' + esc(opts.yLabel || '') + '</text>');
+    out.push('<rect class="chart-sel" x="' + padL + '" y="' + padT + '" width="0" height="' + plotH + '" rx="2"/>');
+    out.push('</svg>');
+
+    return legend([
+      { name: '正常（基线）', color: '#2f7d6f' },
+      { name: '异常', color: '#b4553a' }
+    ]) + '<div class="chart-scroll">' + out.join('') + '</div>';
+  }
+
+  // 拖拽框选放大 / 双击与按钮复位：仅重绘已有序列，不重新请求后端
+  function seriesChartBlock(traces, opts) {
+    var idx = seriesCharts.push({ traces: traces, opts: opts, win: null }) - 1;
+    return '<div class="chart-wrap" data-chart="' + idx + '"></div>';
+  }
+
+  function drawSeriesChart(idx) {
+    var entry = seriesCharts[idx];
+    var host = document.querySelector('#series-box .chart-wrap[data-chart="' + idx + '"]');
+    if (!entry || !host) return;
+    host.innerHTML = seriesCurveChart(entry.traces, entry.opts, entry.win) +
+      (entry.win ? '<button type="button" class="chart-reset" data-chart="' + idx + '">重置视图</button>' : '');
+  }
+
+  function seriesChartPos(clientX, clientY, svg) {
+    var rect = svg.getBoundingClientRect();
+    if (!rect.width) return null;
+    var k = SERIES_VB_W / rect.width;
+    return { x: (clientX - rect.left) * k, y: (clientY - rect.top) * k };
+  }
+
+  function seriesChartTarget(target) {
+    if (!target || !target.getBoundingClientRect) return null;
+    var svg = target.ownerSVGElement || (target.tagName && String(target.tagName).toLowerCase() === 'svg' ? target : null);
+    var wrap = svg && svg.closest ? svg.closest('.chart-wrap') : null;
+    if (!wrap) return null;
+    return { idx: Number(wrap.getAttribute('data-chart')), svg: svg };
+  }
+
+  function onSeriesDown(e) {
+    var node = seriesChartTarget(e.target);
+    var entry = node ? seriesCharts[node.idx] : null;
+    if (!node || !entry || (e.pointerType && e.pointerType !== 'mouse') || e.button !== 0) return;
+    var pos = seriesChartPos(e.clientX, e.clientY, node.svg);
+    var plotH = entry.opts.plotH || 200;
+    if (!pos || pos.x < SERIES_PAD_L || pos.x > SERIES_PAD_L + SERIES_PLOT_W || pos.y < SERIES_PAD_T || pos.y > SERIES_PAD_T + plotH) return;
+    var sel = node.svg.querySelector('.chart-sel');
+    if (!sel) return;
+    sel.setAttribute('width', '0');
+    seriesDrag = { idx: node.idx, svg: node.svg, sel: sel, x0: pos.x, last: null };
+  }
+
+  function onSeriesMove(e) {
+    if (!seriesDrag) return;
+    var pos = seriesChartPos(e.clientX, e.clientY, seriesDrag.svg);
+    if (!pos) return;
+    var lo = Math.max(SERIES_PAD_L, Math.min(seriesDrag.x0, pos.x));
+    var hi = Math.min(SERIES_PAD_L + SERIES_PLOT_W, Math.max(seriesDrag.x0, pos.x));
+    seriesDrag.sel.setAttribute('x', lo.toFixed(1));
+    seriesDrag.sel.setAttribute('width', Math.max(0, hi - lo).toFixed(1));
+    seriesDrag.last = { lo: lo, hi: hi };
+  }
+
+  function onSeriesUp() {
+    var drag = seriesDrag;
+    seriesDrag = null;
+    if (!drag) return;
+    drag.sel.setAttribute('width', '0');
+    var entry = seriesCharts[drag.idx];
+    if (!drag.last || !entry || drag.last.hi - drag.last.lo < 12) return;
+    var full = curveRange(entry.traces), view = entry.win || full;
+    var k = (view.hi - view.lo) / SERIES_PLOT_W;
+    var lo = Math.max(full.lo, view.lo + (drag.last.lo - SERIES_PAD_L) * k);
+    var hi = Math.min(full.hi, view.lo + (drag.last.hi - SERIES_PAD_L) * k);
+    if (!(hi > lo)) return;
+    entry.win = { lo: lo, hi: hi };
+    drawSeriesChart(drag.idx);
+  }
+
+  function onSeriesClick(e) {
+    var target = e.target, node = target && target.closest ? target.closest('.chart-reset') : null;
+    if (!node) return;
+    var idx = Number(node.getAttribute('data-chart'));
+    if (seriesCharts[idx]) {
+      seriesCharts[idx].win = null;
+      drawSeriesChart(idx);
+    }
+  }
+
+  function onSeriesDblClick(e) {
+    var node = seriesChartTarget(e.target);
+    if (!node || !seriesCharts[node.idx] || !seriesCharts[node.idx].win) return;
+    seriesCharts[node.idx].win = null;
+    drawSeriesChart(node.idx);
+  }
+
+  document.addEventListener('pointermove', onSeriesMove);
+  document.addEventListener('pointerup', onSeriesUp);
+  $('series-box').addEventListener('pointerdown', onSeriesDown);
+  $('series-box').addEventListener('click', onSeriesClick);
+  $('series-box').addEventListener('dblclick', onSeriesDblClick);
+
+  function curveTraces(normalSeries, abnormalSeries, key) {
+    var traces = [];
+    [['正常（基线）', normalSeries, 'curve-normal'], ['异常', abnormalSeries, 'curve-abnormal']].forEach(function (item) {
+      var curve = item[1] && item[1][key];
+      if (!curve) return;
+      if (key === 'waveform') {
+        if (!curve.buckets) return;
+        var xs = [];
+        for (var i = 0; i < curve.buckets; i++) xs.push(i);
+        traces.push({ name: item[0] + ' 上包络', cls: item[2], xs: xs, ys: curve.max });
+        traces.push({ name: item[0] + ' 下包络', cls: item[2], xs: xs, ys: curve.min });
+        return;
+      }
+      if (!curve.points) return;
+      traces.push({ name: item[0], cls: item[2], xs: curve.frequency, ys: curve.amplitude });
+    });
+    return traces;
+  }
+
+  function audioPlayers(data, normalSeries, abnormalSeries) {
+    var sessionId = data.session_id;
+    var rows = [['normal', '正常（基线）', normalSeries], ['abnormal', '异常', abnormalSeries]].map(function (item) {
+      var audio = item[2] && item[2].audio;
+      var playable = sessionId && audio && audio.available;
+      return '<div class="audio-item"><span class="audio-name">' + esc(item[1]) + ' 原始波形（按峰值归一化）</span>' +
+        (playable
+          ? '<audio controls preload="none" src="/api/sessions/' + encodeURIComponent(sessionId) + '/audio/' + item[0] + '.wav"></audio>'
+          : '<span class="empty">无可播放音频</span>') +
+        '</div>';
+    });
+    return '<div class="audio-grid">' + rows.join('') + '</div>';
+  }
+
+  function renderSeries(data) {
+    var feats = data.features || {};
+    var ns = (feats.normal || {}).series || null;
+    var as = (feats.abnormal || {}).series || null;
+    seriesCharts = [];
+    var box = $('series-box');
+    if (!ns && !as) {
+      box.innerHTML = '<h3 class="view-sub">原始信号曲线与试听</h3>' +
+        '<p class="empty">本次诊断未生成原始波形曲线（特征提取未完成，或流程在提取前停止）。</p>';
+      return;
+    }
+    var html = '<h3 class="view-sub">原始信号时域波形</h3>' + seriesChartBlock(curveTraces(ns, as, 'waveform'), {
+      symmetric: true, plotH: 210, xLabel: '采样点序号（降采样）', yLabel: '幅值'
+    });
+    html += '<h3 class="view-sub">原始波形音频</h3>' + audioPlayers(data, ns, as);
+
+    var spectrum = curveTraces(ns, as, 'spectrum');
+    html += '<h3 class="view-sub">幅度谱（峰值保序抽点）</h3>' + (spectrum.length
+      ? seriesChartBlock(spectrum, { plotH: 190, xLabel: '频率 (Hz)', yLabel: '幅值' })
+      : '<p class="empty">无幅度谱序列。</p>');
+
+    var envelope = curveTraces(ns, as, 'envelope');
+    html += '<h3 class="view-sub">包络谱（0~1000 Hz）</h3>' + (envelope.length
+      ? seriesChartBlock(envelope, { plotH: 190, xLabel: '频率 (Hz)', yLabel: '幅值' })
+      : '<p class="empty">无包络谱序列。</p>');
+    box.innerHTML = html;
+    seriesCharts.forEach(function (entry, idx) { drawSeriesChart(idx); });
+  }
+
+  // ------------------------------------------------------ 卡片目录（视图切换）
+  var navCards = Array.prototype.slice.call(document.querySelectorAll('#card-nav .nav-card'));
+  var viewPanels = Array.prototype.slice.call(document.querySelectorAll('#result .view-panel'));
+
+  function showView(name) {
+    navCards.forEach(function (card) { card.classList.toggle('is-active', card.getAttribute('data-view') === name); });
+    viewPanels.forEach(function (panel) { panel.classList.toggle('is-active', panel.getAttribute('data-view') === name); });
+    if (currentRecord && !replaying) currentRecord.activeView = name;
+  }
+  function setNavMeta(name, text) {
+    var el = $('nav-meta-' + name);
+    if (el && text !== undefined && text !== null) el.textContent = String(text);
+  }
+  function resetNavMetas() {
+    setNavMeta('process', '等待开始');
+    setNavMeta('reasoning', '—');
+    setNavMeta('evidence', '—');
+    setNavMeta('signal', '波形 / 幅度谱 / 包络谱');
+    setNavMeta('knowledge', '—');
+    setNavMeta('quality', '—');
+    setNavMeta('report', '—');
+    setNavMeta('ask', '完成诊断后可用');
+  }
+  navCards.forEach(function (card) {
+    card.addEventListener('click', function () { showView(card.getAttribute('data-view')); });
+  });
+
+  // ------------------------------------------------------ 会话窗口（一次诊断 = 一条会话记录）
+  var sessions = [];
+  var sessionMap = {};
+  var sessionSeq = 0;
+  var currentRecord = null;
+  var activeStreamRecord = null;
+  var replaying = false;
+  var chatBusy = false;
+
+  function clockText() {
+    var d = new Date();
+    var h = d.getHours(), m = d.getMinutes();
+    return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
+  }
+  function shortInputName(fileInput, sampleValue) {
+    if (fileInput && fileInput.files && fileInput.files[0]) return fileInput.files[0].name.replace(/\.csv$/i, '');
+    return sampleValue || '未指定';
+  }
+  function describeInput() {
+    return shortInputName($('normal_file'), $('normal_sample').value) + ' vs ' +
+      shortInputName($('abnormal_file'), $('abnormal_sample').value);
+  }
+  function statusTag(rec) {
+    if (rec.status === 'ok') return { cls: 's-ok', text: 'ok' };
+    if (rec.status === 'insufficient_evidence') return { cls: 's-warn', text: '证据不足' };
+    if (rec.status === 'error') return { cls: 's-err', text: 'error' };
+    if (rec.status === 'running') return { cls: 's-run', text: '进行中' };
+    return { cls: '', text: rec.status || '-' };
+  }
+
+  function createSession(label) {
+    sessionSeq += 1;
+    var rec = {
+      key: 'session-' + sessionSeq,
+      sessionId: null,
+      label: label,
+      time: clockText(),
+      status: 'running',
+      events: [],
+      result: null,
+      usedSync: false,
+      error: null,
+      askEntries: [],
+      chat: [],
+      activeView: 'process'
+    };
+    sessions.unshift(rec);
+    sessionMap[rec.key] = rec;
+    return rec;
+  }
+
+  function selectRecord(key) {
+    var rec = sessionMap[key];
+    if (!rec) return;
+    if (rec.server && !rec.loaded) rec.loading = true;
+    renderSession(rec);
+    if (rec.server && !rec.loaded) loadSessionDetail(rec);
+  }
+
+  // 刷新后从服务端恢复历史会话：列表只带摘要，完整记录按需拉取
+  function clockFromTs(ts) {
+    var d = new Date(Number(ts) * 1000);
+    if (isNaN(d.getTime())) return '--:--';
+    var hm = ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+    return d.toDateString() === new Date().toDateString()
+      ? hm : (d.getMonth() + 1) + '月' + d.getDate() + '日 ' + hm;
+  }
+
+  function serverRecord(item) {
+    return {
+      key: 'server-' + item.session_id,
+      server: true,
+      loaded: false,
+      loading: false,
+      sessionId: item.session_id,
+      label: (item.normal_input || '未指定') + ' vs ' + (item.abnormal_input || '未指定'),
+      time: clockFromTs(item.created_at),
+      status: item.status || 'unknown',
+      events: [],
+      result: null,
+      usedSync: false,
+      error: null,
+      askEntries: [],
+      chat: [],
+      activeView: 'process'
+    };
+  }
+
+  function applyStoredMessages(rec, messages) {
+    rec.chat = [];
+    rec.askEntries = [];
+    var askQuestion = '';
+    messages.forEach(function (m) {
+      var meta = m.meta || {};
+      if (meta.kind === 'ask') {
+        if (m.role === 'user') { askQuestion = m.content; return; }
+        rec.askEntries.push(askItemHtml({
+          question: askQuestion,
+          answer: m.content,
+          no_support: !!meta.no_support,
+          facts_used: meta.facts_used || [],
+          context_scope: meta.context_scope || ''
+        }));
+        return;
+      }
+      if (m.role === 'user') {
+        rec.chat.push({ role: 'user', text: m.content });
+      } else if (m.role === 'assistant') {
+        rec.chat.push({
+          role: 'assistant',
+          text: m.content,
+          mode: meta.mode,
+          errorCode: (meta.model_error && meta.model_error.code) || '',
+          noSupport: !!meta.no_support
+        });
+      }
+    });
+  }
+
+  function loadSessions() {
+    return fetch('/api/sessions').then(function (r) { return r.json(); }).then(function (data) {
+      var items = (data && data.sessions) || [];
+      items.forEach(function (item) {
+        var rec = serverRecord(item);
+        if (sessionMap[rec.key]) return;
+        sessionMap[rec.key] = rec;
+        sessions.push(rec);
+      });
+      renderSessionList();
+      if (items.length && !currentRecord) selectRecord('server-' + items[0].session_id);
+    }).catch(function () {
+      renderSessionList();
+    });
+  }
+
+  function loadSessionDetail(rec) {
+    fetch('/api/sessions/' + encodeURIComponent(rec.sessionId)).then(function (r) {
+      return r.json().then(function (payload) { return { res: r, payload: payload }; }, function () { return { res: r, payload: null }; });
+    }).then(function (r) {
+      rec.loading = false;
+      if (!r.res.ok) {
+        rec.status = 'error';
+        rec.error = { label: 'HTTP ' + r.res.status, payload: r.payload };
+      } else {
+        rec.events = r.payload.events || [];
+        rec.result = r.payload.result || null;
+        rec.status = (rec.result && rec.result.status) || rec.status;
+        applyStoredMessages(rec, r.payload.messages || []);
+        rec.loaded = true;
+      }
+      if (currentRecord === rec) renderSession(rec);
+      renderSessionList();
+    }).catch(function () {
+      rec.loading = false;
+      rec.status = 'error';
+      rec.error = { label: '连接中断', payload: { detail: { code: 'network_error', message: '暂时无法读取该会话记录，请稍后重试。' } } };
+      if (currentRecord === rec) renderSession(rec);
+      renderSessionList();
+    });
+  }
+
+  function renderSessionList() {
+    var box = $('session-list');
+    if (!sessions.length) {
+      box.innerHTML = '<p class="empty">完成一次诊断后，这里会列出会话窗口。</p>';
+      return;
+    }
+    box.innerHTML = sessions.map(function (rec) {
+      var t = statusTag(rec);
+      var active = (currentRecord && currentRecord.key === rec.key) ? ' is-active' : '';
+      return '<button type="button" class="session-item' + active + '" data-key="' + esc(rec.key) + '">' +
+        '<span class="session-label">' + esc(rec.label) + '</span>' +
+        '<span class="session-meta"><span class="sess-tag ' + t.cls + '">' + esc(t.text) + '</span>' +
+        '<span class="sess-time">' + esc(rec.time) + '</span></span></button>';
+    }).join('');
+    Array.prototype.slice.call(box.querySelectorAll('.session-item')).forEach(function (btn) {
+      btn.addEventListener('click', function () { selectRecord(btn.getAttribute('data-key')); });
+    });
+  }
+
+  // 用会话记录重放渲染：不重新请求后端，只复现该次诊断的时间线 / 结果面板 / 追问记录 / 对话
+  function renderSession(rec) {
+    currentRecord = rec;
+    currentSessionId = rec.sessionId || null;
+    replaying = true;
+    resetResultDom();
+    $('result').style.display = 'block';
+    var hasEnd = rec.events.some(function (ev) {
+      return ev.event === 'diagnosis_completed' || ev.event === 'diagnosis_failed';
+    });
+    if (rec.error) {
+      renderErrorBanner(rec.error.label, rec.error.payload);
+    } else {
+      if (rec.loading) {
+        $('status-banner').innerHTML = '<div class="banner"><h2>正在读取会话记录</h2><p>从服务端恢复该次诊断的事件轨迹与对话…</p></div>';
+      } else if (rec.usedSync && rec.result) {
+        renderTimelineFromResult(rec.result);
+      } else if (rec.events.length) {
+        rec.events.forEach(function (ev) { applyEvent(ev); });
+      } else {
+        $('status-banner').innerHTML = '<div class="banner"><h2>诊断进行中</h2><p>正在等待后端事件…</p></div>';
+      }
+      if (rec.result && !hasEnd) renderResult(rec.result);
+    }
+    rec.askEntries.forEach(function (h) { $('ask-output').insertAdjacentHTML('beforeend', h); });
+    replaying = false;
+    showView(rec.activeView || 'process');
+    $('download-report').disabled = !currentReport;
+    renderSessionList();
+    renderChat(rec);
+    updateChatAvailability();
+  }
+
+  function resetResultDom() {
+    ['status-banner', 'device-box', 'error-box', 'quality-box', 'feature-box', 'evidence-box',
+     'band-box', 'spectrum-box', 'envelope-box', 'candidates-box', 'sources-box',
+     'review-box', 'trace-box', 'report-extra', 'reasoning-left', 'reasoning-right', 'ask-output'].forEach(function (id) { $(id).innerHTML = ''; });
+    $('report-box').textContent = '';
+    $('summary-title').textContent = '分析结论';
+    $('summary-conclusion').textContent = '';
+    $('summary-confidence').textContent = '-';
+    $('summary-metrics').innerHTML = '';
+    $('report-mode').textContent = '';
+    currentReport = '';
+    $('download-report').disabled = true;
+    $('error-panel').style.display = 'none';
+    resetAskUi();
+    resetTimeline();
+    resetNavMetas();
+  }
+
+  function renderErrorBanner(statusLabel, payload) {
+    $('result').style.display = 'block';
+    var detail = payload && payload.detail;
+    var code = '', message = '';
+    if (detail && typeof detail === 'object') {
+      code = detail.code;
+      message = detail.message;
+    } else if (detail) {
+      message = String(detail);
+    } else {
+      message = '服务返回了无法解析的响应（HTTP ' + statusLabel + '）。';
+    }
+    $('status-banner').innerHTML =
+      '<div class="banner err"><h2>请求失败（' + esc(statusLabel) + '）</h2>' +
+      '<p>' + esc(message || '接口未返回诊断结果，请检查输入后重试。') + '</p></div>';
+    $('summary-title').textContent = '未生成报告';
+    $('summary-conclusion').textContent = '修改输入或恢复连接后可重新分析。';
+    $('error-panel').style.display = '';
+    $('error-box').innerHTML =
+      '<dt>失败原因</dt><dd>' + esc(statusLabel) + '</dd>' +
+      '<dt>error.code</dt><dd class="mono-block">' + esc(code || '(无)') + '</dd>' +
+      '<dt>error.message</dt><dd>' + esc(message) + '</dd>';
+    showView('quality');
+  }
+
+  // ------------------------------------------------------ 右侧模型对话
+  function renderChat(rec) {
+    var log = $('chat-log');
+    log.innerHTML = '';
+    if (!rec || !rec.sessionId) {
+      log.innerHTML = '<p class="chat-empty">完成一次诊断后可对话。</p>';
+      return;
+    }
+    if (!rec.chat.length) return;
+    rec.chat.forEach(function (m) {
+      if (m.role === 'user') {
+        log.insertAdjacentHTML('beforeend',
+          '<div class="chat-msg chat-user"><p class="chat-text">' + esc(m.text) + '</p></div>');
+      } else if (m.role === 'assistant') {
+        var src = m.mode === 'llm'
+          ? '模型生成（已通过会话事实校验）'
+          : ('确定性回答' + (m.errorCode ? '（降级原因：' + m.errorCode + '）' : '（模型不可用）'));
+        log.insertAdjacentHTML('beforeend',
+          '<div class="chat-msg chat-assistant' + (m.noSupport ? ' chat-nosupport' : '') + '">' +
+          '<p class="chat-text">' + esc(m.text) + '</p><p class="chat-src">' + esc(src) + '</p></div>');
+      } else {
+        log.insertAdjacentHTML('beforeend',
+          '<div class="chat-msg chat-error"><p class="chat-src">' +
+          esc((m.code ? m.code + '：' : '') + m.message) + '</p></div>');
+      }
+    });
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function updateChatAvailability() {
+    var can = !!(currentRecord && currentRecord.sessionId) && !chatBusy;
+    $('chat-input').disabled = !can;
+    $('chat-send').disabled = !can;
+    $('chat-send').textContent = chatBusy ? '发送中…' : '发送';
+  }
+
+  function sendChat() {
+    var rec = currentRecord;
+    if (!rec || !rec.sessionId || chatBusy) return;
+    var input = $('chat-input');
+    var question = input.value.trim();
+    if (!question) return;
+    rec.chat.push({ role: 'user', text: question });
+    input.value = '';
+    chatBusy = true;
+    renderChat(rec);
+    updateChatAvailability();
+    fetch('/api/sessions/' + encodeURIComponent(rec.sessionId) + '/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question: question })
+    }).then(function (res) {
+      return res.json().then(function (payload) { return { res: res, payload: payload }; }, function () { return { res: res, payload: null }; });
+    }).then(function (r) {
+      if (!r.res.ok) {
+        var d = (r.payload && r.payload.detail) || {};
+        rec.chat.push({ role: 'error', code: d.code || ('HTTP ' + r.res.status), message: d.message || '请求失败，请稍后重试。' });
+      } else {
+        var p = r.payload || {};
+        rec.chat.push({
+          role: 'assistant',
+          text: p.answer || '',
+          mode: p.mode,
+          errorCode: (p.model_error && p.model_error.code) || '',
+          noSupport: !!p.no_support
+        });
+      }
+    }).catch(function () {
+      rec.chat.push({ role: 'error', code: 'network_error', message: '暂时无法连接对话服务，请稍后重试。' });
+    }).then(function () {
+      chatBusy = false;
+      if (currentRecord === rec) renderChat(rec);
+      updateChatAvailability();
+    });
+  }
+
+  // ------------------------------------------------------------ 状态区
+  function loadHealth() {
+    fetch('/health').then(function (r) { return r.json(); }).then(function (h) {
+      $('health-box').innerHTML =
+        '<div class="health-item"><span>接口</span><strong><span class="tag ' + (h.status === 'ok' ? 'on' : 'off') + '">' + esc(h.status) + '</span></strong></div>' +
+        '<div class="health-item"><span>分析工具</span><strong>' + (h.mcp_backend === 'local' ? '本地直接调用' : esc(h.mcp_backend)) + '</strong></div>' +
+        '<div class="health-item"><span>报告配置</span><strong>' + (h.llm_available ? '已配置模型 · 失败可回退' : '模板报告 · 可离线') + '</strong></div>' +
+        '<div class="health-item"><span>知识检索</span><strong>' + (h.retrieval_mode === 'bm25' ? '关键词检索（BM25）' : '混合检索') + '</strong></div>' +
+        '<div class="health-item"><span>内置样例</span><strong>' + esc(h.sample_count) + ' 组</strong></div>';
+    }).catch(function (e) {
+      $('health-box').innerHTML = '<div class="health-item"><span>接口</span><strong class="tag off">读取失败</strong></div>';
+    });
+  }
+
+  function sampleOptionText(s) {
+    var parts = [];
+    if (s.condition_label) parts.push(s.condition_label);
+    if (s.rotation_speed !== null && s.rotation_speed !== undefined) parts.push(s.rotation_speed + ' rpm');
+    if (s.sensor_position) parts.push(s.sensor_position);
+    return String(s.sample_id) + (parts.length ? '（' + parts.join(' · ') + '）' : '');
+  }
+
+  function loadSamples() {
+    return fetch('/api/samples').then(function (r) { return r.json(); }).then(function (data) {
+      var samples = (data && data.samples) || [];
+      var selects = [$('normal_sample'), $('abnormal_sample')];
+      selects.forEach(function (sel) {
+        samples.forEach(function (s) {
+          var opt = document.createElement('option');
+          opt.value = String(s.sample_id);
+          opt.textContent = sampleOptionText(s);
+          sel.appendChild(opt);
+        });
+      });
+      window.__samples = samples;
+      // 首次打开即准备一条可运行的公开样例，用户仍可随时切换或上传自己的 CSV。
+      if (samples.some(function (s) { return s.sample_id === 'normal_1797'; }) &&
+          samples.some(function (s) { return s.sample_id === 'outer_race_1797'; })) {
+        $('normal_sample').value = 'normal_1797';
+        $('abnormal_sample').value = 'outer_race_1797';
+        applySample('normal_1797');
+        applySample('outer_race_1797');
+      }
+    }).catch(function () {
+      window.__samples = [];
+      $('form-error').textContent = '样例加载失败，请刷新重试；也可上传两份 CSV 后分析。';
+    });
+  }
+
+  function applySample(sampleId) {
+    var samples = window.__samples || [];
+    var found = null;
+    for (var i = 0; i < samples.length; i++) {
+      if (String(samples[i].sample_id) === String(sampleId)) { found = samples[i]; break; }
+    }
+    if (!found) return;
+    var map = {
+      sampling_rate: found.sampling_rate,
+      rotation_speed: found.rotation_speed,
+      sensor_position: found.sensor_position,
+      device_type: found.device_type
+    };
+    Object.keys(map).forEach(function (key) {
+      if (map[key] !== null && map[key] !== undefined && String(map[key]) !== '') {
+        $(key).value = String(map[key]);
+      }
+    });
+  }
+
+  // ------------------------------------------------------------ 结果渲染
+  function renderStatusBanner(data) {
+    var status = String(data.status || '');
+    var trace = data.trace || {};
+    if (status === 'ok') {
+      var report = data.report || {};
+      var confidence = report.confidence || {};
+      $('status-banner').innerHTML =
+        '<div class="banner ok"><h2>分析完成</h2><p>置信等级：' +
+        esc(confidenceLabel(confidence.level)) + '。检索分数不是故障概率，请结合证据与复核建议判断。</p></div>';
+    } else if (status === 'insufficient_evidence') {
+      $('status-banner').innerHTML =
+        '<div class="banner warn"><h2>证据不足，暂无法确认故障</h2>' +
+        '<p>请检查基线与待分析数据是否可比。</p>' +
+        '<p style="margin-top:6px"><strong>原因与提示：</strong></p>' +
+        warnBullets(trace.warnings) + '</div>';
+    } else if (status === 'error') {
+      var err = data.error || {};
+      $('status-banner').innerHTML =
+        '<div class="banner err"><h2>分析未完成</h2><p>' + esc(err.message || '请检查输入后重试。') + '</p></div>';
+    } else {
+      $('status-banner').innerHTML =
+        '<div class="banner"><h2>未知状态：' + esc(status || '(空)') + '</h2><p>页面按未知状态处理，仅展示原始字段。</p></div>';
+    }
+  }
+
+  function renderSummary(data) {
+    var report = data.report || {};
+    var confidence = report.confidence || {};
+    var top = (data.candidates || [])[0] || {};
+    var comparison = data.comparison || {};
+    var changes = comparison.feature_changes || {};
+    var rms = changes.rms || {};
+    var trace = data.trace || {};
+    var title = data.status === 'ok' ? '分析结论' : (data.status === 'insufficient_evidence' ? '暂无法确认' : '分析未完成');
+    $('summary-title').textContent = title;
+    $('summary-conclusion').textContent = report.conclusion || (data.error && data.error.message) || '请查看下方详情。';
+    $('summary-confidence').textContent = confidence.level ? confidenceLabel(confidence.level) : '-';
+    var metrics = [
+      ['候选故障', top.title || '无可信候选'],
+      ['RMS 变化', isNum(rms.ratio) ? timesText(rms.ratio) : '未计算'],
+      ['工具调用', trace.tool_calls === undefined ? '-' : String(trace.tool_calls)],
+      ['耗时', trace.elapsed_ms === undefined ? '-' : (trace.elapsed_ms >= 1000 ? (trace.elapsed_ms / 1000).toFixed(1) + ' 秒' : String(trace.elapsed_ms) + ' ms')]
+    ];
+    $('summary-metrics').innerHTML = metrics.map(function (item) {
+      return '<div class="metric"><span>' + esc(item[0]) + '</span><strong>' + esc(item[1]) + '</strong></div>';
+    }).join('');
+  }
+
+  function renderDevice(device) {
+    device = device || {};
+    $('device-box').innerHTML =
+      '<dt>设备类型</dt><dd>' + esc(device.device_type) + '</dd>' +
+      '<dt>采样率 (Hz)</dt><dd>' + esc(device.sampling_rate) + '</dd>' +
+      '<dt>转速 (rpm)</dt><dd>' + esc(device.rotation_speed) + '</dd>' +
+      '<dt>测点</dt><dd>' + esc(device.sensor_position) + '</dd>' +
+      '<dt>健康基线文件</dt><dd class="mono-block">' + esc(device.normal_file) + '</dd>' +
+      '<dt>异常样本文件</dt><dd class="mono-block">' + esc(device.abnormal_file) + '</dd>';
+  }
+
+  function renderError(data) {
+    var err = data.error || {};
+    $('error-panel').style.display = '';
+    $('error-box').innerHTML =
+      '<dt>error.code</dt><dd class="mono-block">' + esc(err.code) + '</dd>' +
+      '<dt>error.message</dt><dd>' + esc(err.message) + '</dd>';
+  }
+
+  function renderQuality(dq) {
+    if (!dq) {
+      $('quality-box').innerHTML = '<p class="empty">未执行数据校验。</p>';
+      return;
+    }
+    var errors = dq.errors || [];
+    var warnings = dq.warnings || [];
+    var normal = dq.normal || {};
+    var abnormal = dq.abnormal || {};
+    var html = '';
+    html += '<p>' +
+      '<span class="tag">valid</span>' + (dq.valid ? '<span class="tag on">通过</span>' : '<span class="tag off">未通过</span>') +
+      '<span class="tag">comparable</span>' + (dq.comparable ? '<span class="tag on">两样本可比</span>' : '<span class="tag off">不可比</span>') +
+      '</p>';
+    html += '<dl class="kv">' +
+      '<dt>正常样本点数</dt><dd>' + esc(normal.n_samples) + '</dd>' +
+      '<dt>异常样本点数</dt><dd>' + esc(abnormal.n_samples) + '</dd>' +
+      '</dl>';
+    html += '<h3>校验明细（checks）</h3>';
+    var checks = dq.checks || {};
+    var names = Object.keys(checks);
+    if (names.length) {
+      html += '<div class="scroll-x"><table><thead><tr><th>检查项</th><th>结果</th><th>说明</th></tr></thead><tbody>';
+      names.forEach(function (name) {
+        var item = checks[name] || {};
+        html += '<tr><td class="mono-block">' + esc(name) + '</td><td>' +
+          (item.passed ? '<span class="tag on">通过</span>' : '<span class="tag off">未通过</span>') +
+          '</td><td>' + esc(item.detail) + '</td></tr>';
+      });
+      html += '</tbody></table></div>';
+    } else {
+      html += '<p class="empty">（无 checks）</p>';
+    }
+    html += '<h3>错误（errors）</h3>';
+    if (errors.length) {
+      html += '<div class="scroll-x"><table><thead><tr><th>code</th><th>field</th><th>message</th></tr></thead><tbody>';
+      errors.forEach(function (e) {
+        html += '<tr><td class="mono-block">' + esc(e && e.code) + '</td><td class="mono-block">' + esc(e && e.field) + '</td><td>' + esc(e && e.message) + '</td></tr>';
+      });
+      html += '</tbody></table></div>';
+    } else {
+      html += '<p class="empty">（无）</p>';
+    }
+    html += '<h3>提示（warnings）</h3>' + warnBullets(warnings.map(function (w) { return (w && w.message) || w; }));
+    $('quality-box').innerHTML = html;
+  }
+
+  var FEATURE_LABELS = {
+    rms: 'RMS',
+    peak: '峰值',
+    kurtosis: '峭度',
+    crest_factor: '波峰因子',
+    dominant_frequency: '主频 (Hz)',
+    dominant_amplitude: '主频幅值'
+  };
+
+  function changeNote(key, block) {
+    block = block || {};
+    var delta = block.delta, ratio = block.ratio;
+    if (key === 'dominant_frequency') {
+      if (delta === null || delta === undefined) return '无数据';
+      if (Math.abs(Number(delta)) < 1e-9) return '主频未迁移';
+      return '主频' + (Number(delta) > 0 ? '上移 ' : '下移 ') + num(Math.abs(Number(delta)), 1) + ' Hz';
+    }
+    if (ratio === null || ratio === undefined) return '缺少基准值，未计算变化倍数';
+    var r = Number(ratio);
+    if (!isFinite(r)) return '-';
+    if (Math.abs(r - 1) < 0.3) return '变化不显著（<30%）';
+    return (r > 1 ? '上升 ' : '下降 ') + (Math.abs(r - 1) * 100).toFixed(0) + '%（约 ' + timesText(r) + '）';
+  }
+
+  function renderFeatures(comparison) {
+    var changes = (comparison && comparison.feature_changes) || {};
+    var keys = Object.keys(changes);
+    if (!keys.length) {
+      $('feature-box').innerHTML = '<p class="empty">无特征对比数据。</p>';
+    } else {
+      var order = Object.keys(FEATURE_LABELS).filter(function (k) { return keys.indexOf(k) >= 0; });
+      keys.forEach(function (k) { if (order.indexOf(k) < 0) order.push(k); });
+      var html = '<table><thead><tr><th>特征</th><th class="num">正常</th><th class="num">异常</th>' +
+        '<th class="num">变化量</th><th class="num">变化比例</th><th>说明</th></tr></thead><tbody>';
+      order.forEach(function (key) {
+        var block = changes[key] || {};
+        html += '<tr><td>' + esc(FEATURE_LABELS[key] || key) + '<span class="sep"></span><span class="mono-block">' + esc(key) + '</span></td>' +
+          '<td class="num">' + esc(num(block.normal, 4)) + '</td>' +
+          '<td class="num">' + esc(num(block.abnormal, 4)) + '</td>' +
+          '<td class="num">' + esc(num(block.delta, 4)) + '</td>' +
+          '<td class="num">' + esc(pctText(block.ratio)) + '<span class="sep"></span>(' + esc(timesText(block.ratio)) + ')</td>' +
+          '<td>' + esc(changeNote(key, block)) + '</td></tr>';
+      });
+      html += '</tbody></table>';
+      $('feature-box').innerHTML = html;
+    }
+
+    var changed = (comparison && comparison.changed_features) || [];
+    var ev = (comparison && comparison.evidence) || [];
+    var extra = '<p>显著变化的特征：' + (changed.length
+      ? changed.map(function (k) { return '<span class="tag">' + esc(FEATURE_LABELS[k] || k) + '</span>'; }).join('')
+      : '<span class="empty">（无）</span>') + '</p>';
+    $('evidence-box').innerHTML = extra + bullets(ev);
+  }
+
+  function renderBand(comparison) {
+    var changes = (comparison && comparison.band_energy_changes) || {};
+    var bands = Object.keys(changes);
+    if (!bands.length) {
+      $('band-box').innerHTML = '<p class="empty">无频带能量对比数据。</p>';
+      return;
+    }
+    var normalVals = bands.map(function (b) { return (changes[b] || {}).normal; });
+    var abnormalVals = bands.map(function (b) { return (changes[b] || {}).abnormal; });
+    var chart = groupedBarChart(bands, [
+      { name: '正常（基线）', values: normalVals, cls: 'bar-normal' },
+      { name: '异常', values: abnormalVals, cls: 'bar-abnormal' }
+    ], '频带能量（幅值平方和，对数刻度）');
+
+    var html = chart + '<h3>数值明细</h3><div class="scroll-x"><table><thead><tr>' +
+      '<th>频带</th><th class="num">正常</th><th class="num">异常</th><th class="num">变化量</th><th class="num">变化比例</th></tr></thead><tbody>';
+    bands.forEach(function (b) {
+      var block = changes[b] || {};
+      html += '<tr><td class="mono-block">' + esc(b) + '</td>' +
+        '<td class="num">' + esc(sci(block.normal)) + '</td>' +
+        '<td class="num">' + esc(sci(block.abnormal)) + '</td>' +
+        '<td class="num">' + esc(sci(block.delta)) + '</td>' +
+        '<td class="num">' + esc(pctText(block.ratio)) + '<span class="sep"></span>(' + esc(timesText(block.ratio)) + ')</td></tr>';
+    });
+    html += '</tbody></table></div>';
+
+    var fc = (comparison && comparison.frequency_change) || null;
+    if (fc) {
+      html += '<h3>主频迁移（frequency_change）</h3><dl class="kv">' +
+        '<dt>正常主频 (Hz)</dt><dd>' + esc(num(fc.normal_dominant, 2)) + '</dd>' +
+        '<dt>异常主频 (Hz)</dt><dd>' + esc(num(fc.abnormal_dominant, 2)) + '</dd>' +
+        '<dt>偏移 (Hz)</dt><dd>' + esc(num(fc.shift_hz, 2)) + '</dd></dl>';
+    }
+    $('band-box').innerHTML = html;
+  }
+
+  function peaksTable(title, peaks) {
+    if (!peaks || !peaks.length) return '<p class="empty">' + esc(title) + '：无峰值数据。</p>';
+    var html = '<h3>' + esc(title) + '</h3><div class="scroll-x"><table><thead><tr>' +
+      '<th class="num">序号</th><th class="num">频率 (Hz)</th><th class="num">幅值</th></tr></thead><tbody>';
+    peaks.forEach(function (p, i) {
+      html += '<tr><td class="num">' + (i + 1) + '</td><td class="num">' + esc(num(p.frequency, 2)) +
+        '</td><td class="num">' + esc(sci(p.amplitude)) + '</td></tr>';
+    });
+    return html + '</tbody></table></div>';
+  }
+
+  function renderSpectrum(features) {
+    features = features || {};
+    var nf = features.normal || null;
+    var af = features.abnormal || null;
+    if (!nf && !af) {
+      $('spectrum-box').innerHTML = '<p class="empty">无特征提取结果。</p>';
+      return;
+    }
+    if (!nf || !af) {
+      $('spectrum-box').innerHTML = '<p class="empty">仅一侧样本完成特征提取（流程可能已中断），无法绘制对比图。</p>';
+      return;
+    }
+    var html = spectrumStemChart(nf.spectrum_peaks, af.spectrum_peaks);
+    html += '<h3>时域 / 频域标量特征</h3><div class="scroll-x"><table><thead><tr>' +
+      '<th>特征</th><th class="num">正常</th><th class="num">异常</th></tr></thead><tbody>';
+    ['sampling_rate', 'n_samples', 'duration_seconds', 'rms', 'peak', 'kurtosis', 'crest_factor', 'dominant_frequency', 'dominant_amplitude'].forEach(function (key) {
+      html += '<tr><td class="mono-block">' + esc(key) + '</td><td class="num">' + esc(num(nf[key], 4)) +
+        '</td><td class="num">' + esc(num(af[key], 4)) + '</td></tr>';
+    });
+    html += '</tbody></table></div>';
+    html += peaksTable('正常样本频谱峰值（spectrum_peaks）', nf.spectrum_peaks);
+    html += peaksTable('异常样本频谱峰值（spectrum_peaks）', af.spectrum_peaks);
+    $('spectrum-box').innerHTML = html;
+  }
+
+  function renderEnvelope(features, comparison) {
+    var nEnv = features && features.normal && features.normal.envelope;
+    var aEnv = features && features.abnormal && features.abnormal.envelope;
+    var changes = (comparison && comparison.characteristic_energy_changes) || null;
+    var html = '';
+
+    if (!nEnv && !aEnv && !changes) {
+      $('envelope-box').innerHTML = '<p class="empty">本次未产生包络解调结果（需要提供转速且流程走完特征提取与对比）。</p>';
+      return;
+    }
+    if (changes) {
+      var labels = Object.keys(changes);
+      var chart = groupedBarChart(labels.map(function (l) { return l.toUpperCase(); }), [
+        { name: '正常（基线）', values: labels.map(function (l) { return (changes[l] || {}).normal; }), cls: 'bar-normal' },
+        { name: '异常', values: labels.map(function (l) { return (changes[l] || {}).abnormal; }), cls: 'bar-abnormal' }
+      ], '包络谱特征频率能量（对数刻度）');
+      html += chart;
+      html += '<h3>特征频率能量明细</h3><div class="scroll-x"><table><thead><tr>' +
+        '<th>特征频率</th><th class="num">正常能量</th><th class="num">异常能量</th><th class="num">变化量</th>' +
+        '<th class="num">变化比例</th><th>基线是否检出</th></tr></thead><tbody>';
+      labels.forEach(function (l) {
+        var block = changes[l] || {};
+        html += '<tr><td class="mono-block">' + esc(l.toUpperCase()) + '</td>' +
+          '<td class="num">' + esc(sci(block.normal)) + '</td>' +
+          '<td class="num">' + esc(sci(block.abnormal)) + '</td>' +
+          '<td class="num">' + esc(sci(block.delta)) + '</td>' +
+          '<td class="num">' + esc(timesText(block.ratio)) + '</td>' +
+          '<td>' + (block.detected_in_baseline ? '是' : '否') + '</td></tr>';
+      });
+      html += '</tbody></table></div>';
+    }
+    var dominant = comparison && comparison.dominant_characteristic;
+    if (dominant) {
+      html += '<h3>' + (dominant.ambiguous ? '并列的特征频率成分（dominant_characteristic）' : '最突出的特征频率成分（dominant_characteristic）') + '</h3><dl class="kv">' +
+        '<dt>标签</dt><dd class="mono-block">' + esc(dominant.label) + '</dd>' +
+        '<dt>特征频率 (Hz)</dt><dd>' + esc(num(dominant.frequency_hz, 2)) + '</dd>' +
+        '<dt>异常能量</dt><dd>' + esc(sci(dominant.abnormal_energy)) + '</dd>' +
+        '<dt>基线能量</dt><dd>' + esc(sci(dominant.normal_energy)) + '</dd>' +
+        '<dt>基线是否检出</dt><dd>' + (dominant.detected_in_baseline ? '是' : '否') + '</dd>' +
+        (dominant.ambiguous ? '<dt>并列候选</dt><dd class="mono-block">' + (dominant.tied_candidates || []).map(function (c) {
+          return esc(String(c.label || '').toUpperCase()) + '（' + esc(sci(c.abnormal_energy)) + '）';
+        }).join('、') + '</dd>' : '') +
+        '<dt>说明</dt><dd>' + esc(dominant.reason) + '</dd></dl>';
+    }
+    var ff = comparison && comparison.fault_frequencies;
+    if (ff) {
+      html += '<h3>理论特征频率（fault_frequencies，按转速换算）</h3><div class="scroll-x"><table><thead><tr>' +
+        '<th>转频</th><th>BPFO</th><th>BPFI</th><th>BSF</th><th>FTF</th><th class="num">转速 (rpm)</th></tr></thead><tbody><tr>' +
+        '<td class="num">' + esc(num(ff.shaft_frequency, 2)) + '</td>' +
+        '<td class="num">' + esc(num(ff.bpfo, 2)) + '</td>' +
+        '<td class="num">' + esc(num(ff.bpfi, 2)) + '</td>' +
+        '<td class="num">' + esc(num(ff.bsf, 2)) + '</td>' +
+        '<td class="num">' + esc(num(ff.ftf, 2)) + '</td>' +
+        '<td class="num">' + esc(num(ff.rotation_speed, 1)) + '</td></tr></tbody></table></div>';
+    }
+    var matches = comparison && comparison.fault_frequency_matches;
+    if (matches && matches.length) {
+      html += '<h3>谱峰与特征频率对齐（fault_frequency_matches）</h3><div class="scroll-x"><table><thead><tr>' +
+        '<th>标签</th><th class="num">谐波阶次</th><th class="num">理论频率 (Hz)</th><th class="num">最近谱峰 (Hz)</th>' +
+        '<th class="num">偏差</th><th class="num">峰值幅值</th></tr></thead><tbody>';
+      matches.forEach(function (m) {
+        html += '<tr><td class="mono-block">' + esc(m.label) + '</td>' +
+          '<td class="num">' + esc(m.harmonic_order) + '</td>' +
+          '<td class="num">' + esc(num(m.frequency, 2)) + '</td>' +
+          '<td class="num">' + esc(num(m.nearest_peak, 2)) + '</td>' +
+          '<td class="num">' + esc(num(m.deviation_pct, 2)) + '%</td>' +
+          '<td class="num">' + esc(sci(m.peak_amplitude)) + '</td></tr>';
+      });
+      html += '</tbody></table></div>';
+    }
+    if (aEnv && aEnv.band_rule) {
+      html += '<p class="hint">解调带规则：' + esc(aEnv.band_rule) + '</p>';
+    }
+    $('envelope-box').innerHTML = html;
+  }
+
+  function renderCandidates(candidates, rag) {
+    if (rag && rag.query) {
+      var head = '<details class="query-details"><summary>查看检索状态与原始语句</summary><p class="mono-block">' + esc(rag.query) + '</p>';
+      head += '<p class="hint">检索方式：' + esc(rag.retrieval) + '　检索到候选：' +
+        esc((rag.candidates || []).length) + ' 条　证据不足标记：' + (rag.insufficient_evidence ? '是' : '否') + '</p>';
+      head += '</details>';
+      $('candidates-box').innerHTML = head + '<h3>候选故障类型（candidates）</h3>' + renderCandidateTable(candidates);
+      return;
+    }
+    $('candidates-box').innerHTML = renderCandidateTable(candidates);
+  }
+
+  function renderCandidateTable(candidates) {
+    if (!candidates || !candidates.length) {
+      return '<p class="empty">未检索到满足阈值的候选（证据不足）。</p>';
+    }
+    var html = '';
+    candidates.forEach(function (c, i) {
+      var check = c.criteria_check || {};
+      var clause = '';
+      if (check.items && check.items.length) {
+        clause = '<dt>判据核对</dt><dd>条款 ' + esc(check.total) + ' 条：命中 ' + esc(check.hits) +
+          ' / 未命中 ' + esc(check.misses) + ' / 未核对 ' + esc(check.unknowns) +
+          '　alignment_score ' + esc(num(c.alignment_score, 4)) + '</dd>';
+      }
+      html += '<div style="margin-bottom:10px">' +
+        '<p><span class="tag">#' + (i + 1) + '</span><span class="cand-title">' + esc(c.title) + '</span>' +
+        '<span class="sep"></span><span class="mono-block">' + esc(c.fault_type) + '</span>' +
+        '<span class="sep"></span>相似度 ' + esc(num(c.score, 4)) + '</p>' +
+        '<dl class="kv">' + clause +
+        '<dt>命中特征</dt><dd>' + esc(c.evidence) + '</dd>' +
+        '<dt>来源</dt><dd>' + esc(c.source) + '</dd>' +
+        '<dt>source_url</dt><dd class="mono-block">' + esc(c.source_url) + '</dd>' +
+        '<dt>locator</dt><dd class="mono-block">' + esc(c.locator) + '</dd>' +
+        '</dl></div>';
+    });
+    return html;
+  }
+
+  function renderSources(sources) {
+    if (!sources || !sources.length) {
+      $('sources-box').innerHTML = '<p class="empty">本次没有可追溯的知识来源。</p>';
+      return;
+    }
+    var html = '<table><thead><tr><th>来源</th><th>URL</th><th>locator</th><th>关联故障类型</th></tr></thead><tbody>';
+    sources.forEach(function (s) {
+      html += '<tr><td>' + esc(s.name) + '</td><td class="mono-block">' + esc(s.url) +
+        '</td><td class="mono-block">' + esc(s.locator) + '</td><td class="mono-block">' + esc(s.fault_type) + '</td></tr>';
+    });
+    $('sources-box').innerHTML = html + '</tbody></table>';
+  }
+
+  function renderReport(markdown, report) {
+    // 纯文本渲染，避免任何 HTML / markdown 注入
+    $('report-box').textContent = markdown ? String(markdown) : '（无报告内容）';
+    currentReport = markdown ? String(markdown) : '';
+    $('download-report').disabled = !currentReport;
+    var r = report || {};
+    var extra = '';
+    var conf = r.confidence || {};
+    if (conf.level || conf.reason) {
+      extra += '<h3>置信说明</h3><p>等级：' + esc(conf.level) + '</p><p>' + esc(conf.reason) + '</p>';
+    }
+    if (r.data_facts && r.data_facts.length) extra += '<h3>数据事实（data_facts）</h3>' + bullets(r.data_facts);
+    if (r.knowledge_basis && r.knowledge_basis.length) extra += '<h3>知识依据（knowledge_basis）</h3>' + bullets(r.knowledge_basis);
+    if (r.prototype_limits && r.prototype_limits.length) extra += '<h3>适用边界（prototype_limits）</h3>' + bullets(r.prototype_limits);
+    $('report-extra').innerHTML = extra;
+  }
+
+  function renderReview(suggestions) {
+    $('review-box').innerHTML = bullets(suggestions);
+  }
+
+  function renderTrace(trace) {
+    trace = trace || {};
+    var retrieval = trace.retrieval;
+    var retrievalText = retrieval === null || retrieval === undefined ? '-'
+      : (typeof retrieval === 'string' ? retrieval : JSON.stringify(retrieval));
+    var html = '<div class="grid-2"><dl class="kv">' +
+      '<dt>backend</dt><dd class="mono-block">' + esc(trace.backend) + '</dd>' +
+      '<dt>tool_calls</dt><dd>' + esc(trace.tool_calls) + ' / ' + esc(trace.max_tool_calls) + '</dd>' +
+      '<dt>tool_retries</dt><dd class="mono-block">' + esc(trace.tool_retries ? JSON.stringify(trace.tool_retries) : '-') + '</dd>' +
+      '<dt>llm_mode</dt><dd class="mono-block">' + esc(trace.llm_mode) + '</dd>' +
+      '<dt>llm_calls</dt><dd>' + esc(trace.llm_calls) + '</dd>' +
+      '<dt>retrieval</dt><dd class="mono-block">' + esc(retrievalText) + '</dd>' +
+      '<dt>elapsed_ms</dt><dd>' + esc(trace.elapsed_ms) + ' ms</dd>' +
+      '<dt>llm_error</dt><dd class="mono-block">' + (trace.llm_error ? esc(JSON.stringify(trace.llm_error)) : '-') + '</dd>' +
+      '</dl><div><h3>warnings</h3>' + warnBullets(trace.warnings) + '</div></div>';
+    $('trace-box').innerHTML = html;
+    $('report-mode').textContent = ({ llm: '本次报告：模型生成', template: '本次报告：模板生成', template_fallback: '模型暂不可用，本次使用模板报告' })[trace.llm_mode] || '';
+  }
+
+  // ------------------------------------------------------------ Agent 决策依据（P0）
+  function renderReasoning(data) {
+    var status = String(data.status || '');
+    var report = data.report || {};
+    var confidence = report.confidence || {};
+    var comparison = data.comparison || {};
+    var changes = comparison.feature_changes || {};
+    var candidates = data.candidates || [];
+    var rag = data.rag || {};
+    var trace = data.trace || {};
+    var left = '', right = '';
+
+    // 1. 候选故障类型（只能来自 RAG）
+    left += '<h3>候选故障类型（RAG 检索）</h3>';
+    if (candidates.length) {
+      left += '<ul class="plain">';
+      candidates.slice(0, 3).forEach(function (c, i) {
+        left += '<li><span class="tag">#' + (i + 1) + '</span><span class="cand-title">' + esc(c.title) + '</span>' +
+          '<span class="sep"></span><span class="mono-block">' + esc(c.fault_type) + '</span>' +
+          '<span class="sep"></span>相似度 ' + esc(num(c.score, 4)) + '</li>';
+      });
+      left += '</ul>';
+    } else {
+      left += '<p class="empty">' + (status === 'insufficient_evidence'
+        ? '证据不足：候选列表已按规则清空，未做故障类型判断。'
+        : '未检索到满足阈值的候选。') + '</p>';
+    }
+
+    // 2. 关键数值变化
+    var rms = changes.rms || {}, kurt = changes.kurtosis || {}, domf = changes.dominant_frequency || {};
+    left += '<h3>关键数值变化</h3><dl class="kv">' +
+      '<dt>RMS（均方根）</dt><dd>' + esc(num(rms.normal, 4)) + ' → ' + esc(num(rms.abnormal, 4)) +
+      '（' + esc(pctText(rms.ratio)) + '，约 ' + esc(timesText(rms.ratio)) + '）</dd>' +
+      '<dt>峭度</dt><dd>' + esc(num(kurt.normal, 4)) + ' → ' + esc(num(kurt.abnormal, 4)) +
+      '（' + esc(pctText(kurt.ratio)) + '，约 ' + esc(timesText(kurt.ratio)) + '）</dd>' +
+      '<dt>主频 (Hz)</dt><dd>' + esc(num(domf.normal, 1)) + ' → ' + esc(num(domf.abnormal, 1)) +
+      '（' + esc(changeNote('dominant_frequency', domf)) + '）</dd></dl>';
+
+    // 3. 主要频率证据
+    left += '<h3>主要频率证据（包络谱）</h3>';
+    var dominant = comparison.dominant_characteristic;
+    var matches = comparison.fault_frequency_matches || [];
+    if (dominant) {
+      if (dominant.ambiguous) {
+        left += '<p>' + (dominant.tied_candidates || []).map(function (c) {
+          return esc(String(c.label || '').toUpperCase()) + '（' + esc(num(c.frequency_hz, 1)) + ' Hz）';
+        }).join('、') + ' 频带能量接近，无单一主导成分。</p>';
+      } else {
+        left += '<p><strong>' + esc(String(dominant.label || '').toUpperCase()) + '</strong>（' + esc(num(dominant.frequency_hz, 1)) + ' Hz）频带能量最突出' +
+          (isNum(dominant.ratio) ? '，约为基线的 ' + esc(timesText(dominant.ratio)) : '') + '。</p>';
+      }
+    } else {
+      left += '<p class="empty">无包络谱特征频率数据。</p>';
+    }
+    if (matches.length) {
+      left += '<ul class="plain">' + matches.slice(0, 3).map(function (m) {
+        return '<li>' + esc(m.label) + ' ' + esc(m.harmonic_order) + '×（' + esc(num(m.frequency, 2)) + ' Hz）与最近谱峰 ' +
+          esc(num(m.nearest_peak, 2)) + ' Hz 对齐，偏差 ' + esc(num(m.deviation_pct, 2)) + '%</li>';
+      }).join('') + '</ul>';
+    }
+
+    // 4. RAG 命中与来源
+    right += '<h3>RAG 命中与来源</h3>';
+    right += '<p>命中候选 <strong>' + esc(candidates.length) + '</strong> 条' +
+      (rag.retrieval ? '<span class="sep"></span>检索方式：' + esc(rag.retrieval) : '') +
+      (rag.insufficient_evidence ? '<span class="sep"></span><span class="tag warn">标记为证据不足</span>' : '') + '</p>';
+    var sources = data.sources || [];
+    if (sources.length) {
+      right += '<ul class="plain">' + sources.slice(0, 3).map(function (s) {
+        return '<li>' + esc(s.name) + '<span class="sep"></span><span class="mono-block">' + esc(s.locator) + '</span></li>';
+      }).join('') + '</ul>';
+    } else {
+      right += '<p class="empty">本次无可追溯的知识来源。</p>';
+    }
+
+    // 5. 置信度及其原因
+    right += '<h3>置信度及其原因</h3>';
+    right += confidence.level
+      ? '<p>等级：<strong>' + esc(confidenceLabel(confidence.level)) + '</strong>' + (confidence.reason ? '<span class="sep"></span>' + esc(confidence.reason) : '') + '</p>'
+      : '<p class="empty">未提供置信度（状态：' + esc(status || '-') + '）。</p>';
+
+    // 6. 降级与复核提示
+    right += '<h3>降级与复核提示</h3>';
+    var modeTags = {
+      llm: '<span class="tag on">报告：模型生成</span>',
+      template: '<span class="tag">报告：模板生成（未配置模型）</span>',
+      template_fallback: '<span class="tag warn">模型调用失败，已回退模板报告</span>'
+    };
+    right += '<p>' + (modeTags[trace.llm_mode] || '<span class="tag">报告模式：' + esc(trace.llm_mode || '-') + '</span>') + '</p>';
+    var notes = [];
+    if (trace.frequency_review) {
+      notes.push(String(trace.frequency_review.reason || '') + ' ' + String(trace.frequency_review.review_advice || ''));
+    }
+    if (trace.evidence_conflict) notes.push(String(trace.evidence_conflict));
+    right += notes.length
+      ? '<ul class="plain warnlist">' + notes.map(function (n) { return '<li>' + esc(n) + '</li>'; }).join('') + '</ul>'
+      : '<p class="empty">本次无频率复核或人工复核提示。</p>';
+
+    $('reasoning-left').innerHTML = left;
+    $('reasoning-right').innerHTML = right;
+  }
+
+  // ------------------------------------------------------------ Agent 执行时间线（P0/P1）
+  var NODE_ORDER = [
+    { id: 'validate_node', label: '输入校验' },
+    { id: 'mcp_analysis_node', label: '振动信号分析（4 次 MCP 工具调用）' },
+    { id: 'rag_retrieval_node', label: '故障知识检索（RAG）' },
+    { id: 'evidence_check_node', label: '证据充分性判断' },
+    { id: 'llm_node', label: '模型诊断' },
+    { id: 'report_node', label: '报告汇总' }
+  ];
+  var BADGE_TEXT = { pending: '等待', running: '执行中', completed: '已完成', failed: '失败', skipped: '跳过', fallback: '回退', interrupted: '中断' };
+  var tl = { session: null, nodes: {}, done: false };
+  var streamDone = true;
+  var finalized = true;
+  var currentStageText = '';
+  var currentSessionId = null;
+  var streamTimer = null;
+
+  function nodeIndex(id) {
+    for (var i = 0; i < NODE_ORDER.length; i++) if (NODE_ORDER[i].id === id) return i;
+    return -1;
+  }
+  function nodeLabel(id) {
+    var i = nodeIndex(id);
+    return i >= 0 ? NODE_ORDER[i].label : id;
+  }
+
+  function resetTimeline() {
+    tl = { session: null, nodes: {}, done: false };
+    $('tl-session').innerHTML = '';
+    $('timeline-list').innerHTML = '<li class="tl-empty">尚无执行记录。</li>';
+  }
+
+  function ensureNodeItem(nodeId) {
+    if (tl.nodes[nodeId]) return tl.nodes[nodeId];
+    var item = document.createElement('li');
+    item.className = 'tl-item tl-pending';
+    item.setAttribute('data-node', nodeId);
+    item.innerHTML =
+      '<div class="tl-head"><span class="tl-badge">等待</span>' +
+      '<span class="tl-label"></span><span class="tl-node mono"></span>' +
+      '<span class="tl-tplus"></span></div>' +
+      '<p class="tl-summary" style="display:none"></p>' +
+      '<details class="tl-detail" style="display:none"><summary>展开工具与明细</summary>' +
+      '<ul class="tl-tools"></ul><div class="tl-extra"></div></details>';
+    insertTimelineItem(item, nodeId);
+    var entry = { el: item, status: 'pending', fallback: false };
+    entry.el.querySelector('.tl-label').textContent = nodeLabel(nodeId);
+    entry.el.querySelector('.tl-node').textContent = nodeId;
+    tl.nodes[nodeId] = entry;
+    return entry;
+  }
+
+  function insertTimelineItem(item, nodeId) {
+    var list = $('timeline-list');
+    var empty = list.querySelector('.tl-empty');
+    if (empty) empty.style.display = 'none';
+    var idx = nodeIndex(nodeId);
+    var inserted = false;
+    for (var i = 0; i < list.children.length; i++) {
+      var child = list.children[i];
+      if (child.hasAttribute('data-node')) {
+        if (nodeIndex(child.getAttribute('data-node')) > idx) { list.insertBefore(item, child); inserted = true; break; }
+      } else { list.insertBefore(item, child); inserted = true; break; }
+    }
+    if (!inserted) list.appendChild(item);
+  }
+
+  function setNodeStatus(nodeId, status) {
+    var entry = tl.nodes[nodeId];
+    if (!entry) return;
+    entry.status = status;
+    var shown = (entry.fallback && status === 'completed') ? 'fallback' : status;
+    entry.el.className = 'tl-item tl-' + shown;
+    entry.el.querySelector('.tl-badge').textContent = BADGE_TEXT[shown] || shown;
+  }
+
+  function showNodeSummary(nodeId, text, tplus) {
+    var entry = tl.nodes[nodeId];
+    if (!entry) return;
+    if (text) {
+      var p = entry.el.querySelector('.tl-summary');
+      p.textContent = text;
+      p.style.display = '';
+    }
+    if (tplus !== undefined && tplus !== null) {
+      entry.el.querySelector('.tl-tplus').textContent = 'T+' + tplus + ' ms';
+    }
+  }
+
+  function appendToolRow(nodeId, toolName, labelText) {
+    var entry = ensureNodeItem(nodeId);
+    var tools = entry.el.querySelector('.tl-tools');
+    var li = document.createElement('li');
+    li.className = 'tl-tool tl-tool-running';
+    li.setAttribute('data-tool', toolName);
+    li.innerHTML = '<span class="t-name mono">' + esc(toolName) + '</span><span class="t-text"></span>';
+    li.querySelector('.t-text').textContent = labelText || '';
+    tools.appendChild(li);
+    entry.el.querySelector('.tl-detail').style.display = '';
+    return li;
+  }
+
+  function completeToolRow(nodeId, toolName, ok, text) {
+    var entry = tl.nodes[nodeId];
+    if (!entry) return;
+    var rows = entry.el.querySelectorAll('.tl-tool-running[data-tool="' + toolName + '"]');
+    var row = rows.length ? rows[rows.length - 1] : null;
+    if (!row) row = appendToolRow(nodeId, toolName, '');
+    row.className = ok ? 'tl-tool tl-tool-done' : 'tl-tool tl-tool-failed';
+    if (text) row.querySelector('.t-text').textContent = ' — ' + text;
+  }
+
+  function appendNodeNote(nodeId, cls, html) {
+    var entry = ensureNodeItem(nodeId);
+    var box = entry.el.querySelector('.tl-extra');
+    var div = document.createElement('div');
+    div.className = cls;
+    div.innerHTML = html;
+    box.appendChild(div);
+    entry.el.querySelector('.tl-detail').style.display = '';
+  }
+
+  function appendFinalRow(ok, label, summary) {
+    var li = document.createElement('li');
+    li.className = 'tl-item tl-final ' + (ok ? 'tl-completed' : 'tl-failed');
+    li.innerHTML = '<div class="tl-head"><span class="tl-badge">' + (ok ? '已完成' : '失败') + '</span>' +
+      '<span class="tl-label">' + esc(label) + '</span></div>' +
+      (summary ? '<p class="tl-summary">' + esc(summary) + '</p>' : '');
+    $('timeline-list').appendChild(li);
+  }
+
+  // ---------------- SSE 事件 → 时间线
+  function onDiagnosisStarted(ev) {
+    tl.session = ev.session_id || null;
+    $('result').style.display = 'block';
+    $('status-banner').innerHTML =
+      '<div class="banner"><h2><span class="spinner"></span>Agent 正在执行诊断</h2><p>' + esc(ev.summary || '') + '</p></div>';
+    $('tl-session').innerHTML = '会话 <span class="mono">' + esc(ev.session_id || '-') + '</span>';
+    NODE_ORDER.forEach(function (n) { ensureNodeItem(n.id); });
+    currentStageText = '诊断已开始';
+    setNavMeta('process', '执行中…');
+    if (!replaying) {
+      showView('process');
+      $('result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  function onNodeStarted(ev) {
+    ensureNodeItem(ev.node);
+    setNodeStatus(ev.node, 'running');
+    currentStageText = '正在执行：' + nodeLabel(ev.node);
+  }
+
+  function onNodeCompleted(ev) {
+    var entry = ensureNodeItem(ev.node);
+    if (ev.status === 'fallback' || entry.fallback) { entry.fallback = true; }
+    setNodeStatus(ev.node, ev.status === 'failed' ? 'failed' : 'completed');
+    showNodeSummary(ev.node, ev.summary, ev.elapsed_ms);
+    currentStageText = nodeLabel(ev.node) + ' 完成';
+    var done = 0;
+    Object.keys(tl.nodes).forEach(function (id) {
+      var s = tl.nodes[id].status;
+      if (s === 'completed' || s === 'skipped') done += 1;
+    });
+    setNavMeta('process', '已完成 ' + done + '/' + NODE_ORDER.length + ' 节点');
+  }
+
+  function onWarning(ev) {
+    if (ev.node && nodeIndex(ev.node) >= 0) {
+      var entry = ensureNodeItem(ev.node);
+      if (ev.status === 'fallback' || ev.status === 'degraded') {
+        entry.fallback = true;
+        if (entry.status === 'completed') setNodeStatus(ev.node, entry.status);
+      }
+      appendNodeNote(ev.node, 'tl-warn', '<strong>' + esc(ev.label || '提示') + '</strong>' +
+        (ev.summary ? '：' + esc(ev.summary) : ''));
+    } else {
+      $('tl-session').insertAdjacentHTML('beforeend',
+        '<div class="tl-warn">' + esc(ev.label || ev.summary || '提示') + '</div>');
+    }
+  }
+
+  function onBranch(ev) {
+    if (ev.node && nodeIndex(ev.node) >= 0) {
+      appendNodeNote(ev.node, 'tl-branch', '<strong>分支：' + esc(ev.label || '') + '</strong>' +
+        (ev.summary ? ' — ' + esc(ev.summary) : ''));
+    }
+    if (ev.status === 'skipped') {
+      ensureNodeItem('llm_node');
+      setNodeStatus('llm_node', 'skipped');
+      showNodeSummary('llm_node', (ev.payload && ev.payload.reason)
+        ? '跳过原因：' + ev.payload.reason : '证据不足，跳过模型诊断');
+    }
+  }
+
+  function onDiagnosisEnd(ev, ok) {
+    if (!replaying) { streamDone = true; tl.done = true; }
+    Object.keys(tl.nodes).forEach(function (id) {
+      if (tl.nodes[id].status === 'running') setNodeStatus(id, 'interrupted');
+    });
+    appendFinalRow(ok, ev.label || (ok ? '诊断完成' : '诊断失败'), ev.summary);
+    currentStageText = ok ? '诊断完成' : '诊断失败';
+    var result = (currentRecord && currentRecord.result) ||
+      (ev.payload && ev.payload.result) ||
+      (ok ? null : { status: 'error', error: (ev.payload && ev.payload.error) || { code: 'unknown', message: ev.summary || '' } });
+    if (result) {
+      if (currentRecord && !currentRecord.result) currentRecord.result = result;
+      renderResult(result);
+    }
+    if (!replaying) finalizeRun();
+  }
+
+  function applyEvent(ev) {
+    switch (ev.event) {
+      case 'diagnosis_started': onDiagnosisStarted(ev); break;
+      case 'node_started': onNodeStarted(ev); break;
+      case 'tool_started': appendToolRow(ev.node, ev.tool, ev.label); break;
+      case 'tool_completed': completeToolRow(ev.node, ev.tool, ev.status !== 'failed', ev.summary); break;
+      case 'warning': onWarning(ev); break;
+      case 'node_completed': onNodeCompleted(ev); break;
+      case 'branch_selected': onBranch(ev); break;
+      case 'diagnosis_completed': onDiagnosisEnd(ev, true); break;
+      case 'diagnosis_failed': onDiagnosisEnd(ev, false); break;
+      default: break; // 未知事件忽略，保持前向兼容
+    }
+  }
+
+  // 事件先入库（会话记录），当前会话正在查看时才同步渲染 DOM
+  function handleEvent(ev) {
+    if (!ev || !ev.event) return;
+    var rec = activeStreamRecord;
+    var isEnd = ev.event === 'diagnosis_completed' || ev.event === 'diagnosis_failed';
+    if (rec) {
+      rec.events.push(ev);
+      if (ev.session_id && !rec.sessionId) {
+        rec.sessionId = ev.session_id;
+        if (currentRecord === rec) { currentSessionId = rec.sessionId; renderChat(rec); }
+      }
+      if (isEnd) {
+        streamDone = true;
+        var result = (ev.payload && ev.payload.result) ||
+          (ev.event === 'diagnosis_failed'
+            ? { status: 'error', error: (ev.payload && ev.payload.error) || { code: 'unknown', message: ev.summary || '' } }
+            : null);
+        if (result) { rec.result = result; rec.status = String(result.status || 'error'); }
+        else { rec.status = 'error'; }
+      }
+    }
+    if (rec && currentRecord === rec) applyEvent(ev);
+    renderSessionList();
+    updateChatAvailability();
+    if (isEnd && !replaying) finalizeRun();
+  }
+
+  function consumeSseBlock(block) {
+    var dataLines = block.split('\n').filter(function (l) { return l.indexOf('data:') === 0; });
+    if (!dataLines.length) return;
+    var text = dataLines.map(function (l) { return l.replace(/^data:\s?/, ''); }).join('\n');
+    var ev = null;
+    try { ev = JSON.parse(text); } catch (e) { return; }
+    handleEvent(ev);
+  }
+
+  // ---------------- 提交流程（SSE 优先，失败降级同步接口）
+  function buildForm() {
+    var normalFile = $('normal_file').files[0] || null;
+    var abnormalFile = $('abnormal_file').files[0] || null;
+    var normalSample = $('normal_sample').value;
+    var abnormalSample = $('abnormal_sample').value;
+
+    if (!normalFile && !normalSample) throw new Error('正常（基线）槽位需要：上传 CSV 文件，或选择一个内置样例。');
+    if (!abnormalFile && !abnormalSample) throw new Error('异常槽位需要：上传 CSV 文件，或选择一个内置样例。');
+
+    var rate = parseFloat($('sampling_rate').value);
+    var rpm = parseFloat($('rotation_speed').value);
+    if (!isFinite(rate) || rate <= 0) throw new Error('采样率 (Hz) 必须是正数。');
+    if (!isFinite(rpm) || rpm <= 0) throw new Error('转速 (rpm) 必须是正数。');
+
+    var fd = new FormData();
+    if (normalFile) fd.append('normal_file', normalFile, normalFile.name);
+    if (abnormalFile) fd.append('abnormal_file', abnormalFile, abnormalFile.name);
+    if (normalSample) fd.append('normal_sample', normalSample);
+    if (abnormalSample) fd.append('abnormal_sample', abnormalSample);
+    fd.append('sampling_rate', String(rate));
+    fd.append('rotation_speed', String(rpm));
+    var sensor = $('sensor_position').value.trim();
+    var device = $('device_type').value.trim();
+    if (sensor) fd.append('sensor_position', sensor);
+    if (device) fd.append('device_type', device);
+    return fd;
+  }
+
+  function runDiagnose() {
+    if (busy) return;
+    var fd = null, invalidMessage = null;
+    try {
+      fd = buildForm();
+    } catch (e) {
+      invalidMessage = e.message;
+    }
+
+    var rec = createSession(describeInput());
+    activeStreamRecord = rec;
+    clearResults();
+    selectRecord(rec.key);
+
+    if (invalidMessage) {
+      $('form-error').textContent = invalidMessage;
+      rec.status = 'error';
+      rec.error = { label: '输入校验失败（未发出请求）', payload: { detail: { code: 'invalid_input', message: invalidMessage } } };
+      renderErrorBanner(rec.error.label, rec.error.payload);
+      renderSessionList();
+      $('result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+
+    $('form-error').textContent = '';
+    finalized = false;
+    streamDone = false;
+    setLoading(true);
+    startStream(fd);
+  }
+
+  function startStream(fd) {
+    var controller = new AbortController();
+    streamTimer = setTimeout(function () { controller.abort(); }, 120000);
+    fetch('/api/diagnose/stream', { method: 'POST', body: fd, signal: controller.signal })
+      .then(function (res) {
+        if (!res.ok) {
+          return res.text().then(function (text) {
+            var payload = null;
+            try { payload = JSON.parse(text); } catch (e) { payload = null; }
+            showHttpError('HTTP ' + res.status, payload);
+            finalizeRun();
+          });
+        }
+        var reader = res.body.getReader();
+        var decoder = new TextDecoder();
+        var buffer = '';
+        var pump = function () {
+          return reader.read().then(function (chunk) {
+            if (chunk.done) return;
+            buffer += decoder.decode(chunk.value, { stream: true });
+            var blocks = buffer.split('\n\n');
+            buffer = blocks.pop();
+            for (var i = 0; i < blocks.length; i++) consumeSseBlock(blocks[i]);
+            return pump();
+          });
+        };
+        return pump().then(function () {
+          if (!streamDone) fallbackToSync(fd, '实时事件流提前结束');
+        });
+      })
+      .catch(function (e) {
+        if (streamDone) { finalizeRun(); return; }
+        if (e && e.name === 'AbortError') {
+          showHttpError('等待超时', { detail: { code: 'request_timeout', message: '等待超过 120 秒，页面已停止等待。服务器可能仍在处理，请稍后再试。' } });
+          finalizeRun();
+          return;
+        }
+        fallbackToSync(fd, '实时事件流连接失败');
+      });
+  }
+
+  function fallbackToSync(fd, reason) {
+    currentStageText = '实时事件流不可用，正在改用同步接口获取结果…';
+    if (activeStreamRecord) activeStreamRecord.usedSync = true;
+    if (currentRecord === activeStreamRecord) {
+      $('tl-session').insertAdjacentHTML('beforeend',
+        '<div class="tl-branch">' + esc(reason) + '，已改用同步接口获取结果。</div>');
+      var empty = $('timeline-list').querySelector('.tl-empty');
+      if (empty) empty.style.display = 'none';
+    }
+    syncDiagnose(fd);
+  }
+
+  function syncDiagnose(fd) {
+    var controller = new AbortController();
+    var requestTimeout = setTimeout(function () { controller.abort(); }, 90000);
+    fetch('/api/diagnose', { method: 'POST', body: fd, signal: controller.signal })
+      .then(function (res) {
+        return res.text().then(function (text) {
+          var payload = null;
+          try { payload = JSON.parse(text); } catch (e) { payload = null; }
+          return { res: res, payload: payload };
+        });
+      })
+      .then(function (r) {
+        clearTimeout(requestTimeout);
+        if (!r.res.ok || !r.payload) {
+          showHttpError('HTTP ' + r.res.status, r.payload);
+          finalizeRun();
+          return;
+        }
+        var rec = activeStreamRecord;
+        if (rec) {
+          rec.result = r.payload;
+          rec.status = String(r.payload.status || 'ok');
+          rec.usedSync = true;
+          if (r.payload.session_id) rec.sessionId = r.payload.session_id;
+        }
+        if (rec && currentRecord === rec) {
+          renderTimelineFromResult(r.payload);
+          renderResult(r.payload);
+        }
+        renderSessionList();
+        renderChat(rec);
+        updateChatAvailability();
+        finalizeRun();
+      })
+      .catch(function (e) {
+        clearTimeout(requestTimeout);
+        var timedOut = e && e.name === 'AbortError';
+        showHttpError(timedOut ? '等待超时' : '连接中断', { detail: { code: timedOut ? 'request_timeout' : 'network_error', message: timedOut ? '等待超过 90 秒，页面已停止等待。服务器可能仍在处理，请稍后再试。' : '暂时无法连接分析服务，请检查网络或稍后重试。' } });
+        finalizeRun();
+      });
+  }
+
+  // 同步路径：由 trace.nodes 重建节点时间线（真实执行轨迹，非模拟）
+  function renderTimelineFromResult(result) {
+    resetTimeline();
+    var trace = result.trace || {};
+    var visited = trace.nodes || [];
+    var isErr = String(result.status) === 'error';
+    var lastVisited = visited.length ? visited[visited.length - 1] : null;
+    $('tl-session').innerHTML = '会话 <span class="mono">' + esc(result.session_id || '-') + '</span>';
+    NODE_ORDER.forEach(function (n) {
+      var entry = ensureNodeItem(n.id);
+      if (visited.indexOf(n.id) < 0) {
+        if (n.id === 'llm_node' && String(result.status) === 'insufficient_evidence') {
+          setNodeStatus(n.id, 'skipped');
+          showNodeSummary(n.id, '证据不足，跳过模型诊断（分支：report_node）');
+        }
+        return;
+      }
+      if (n.id === 'llm_node' && (trace.llm_mode === 'template' || trace.llm_mode === 'template_fallback')) {
+        entry.fallback = true;
+      }
+      if (isErr && n.id === lastVisited) {
+        setNodeStatus(n.id, 'failed');
+        showNodeSummary(n.id, (result.error && result.error.message) || '该节点执行失败，流程在此停止。');
+      } else {
+        setNodeStatus(n.id, 'completed');
+      }
+    });
+    appendFinalRow(!isErr, isErr ? '诊断失败' : '诊断完成',
+      isErr ? ((result.error && result.error.message) || '流程在错误状态停止。')
+            : '节点明细与工具调用见上方时间线。');
+  }
+
+  function updateNavMetas(data) {
+    data = data || {};
+    var trace = data.trace || {};
+    var status = String(data.status || '');
+    var report = data.report || {};
+    var comparison = data.comparison || {};
+    var changes = comparison.feature_changes || {};
+    var rms = changes.rms || {};
+    var candidates = data.candidates || [];
+    var sources = data.sources || [];
+    var dq = data.data_quality || {};
+    var toolCalls = trace.tool_calls === undefined ? '-' : trace.tool_calls;
+    setNavMeta('process', status === 'error' ? '执行中断 · 已记录失败节点'
+      : (status === 'insufficient_evidence' ? '已完成 · 证据不足，跳过模型' : '已完成 · 工具调用 ' + toolCalls + ' 次'));
+    setNavMeta('reasoning', candidates.length
+      ? '候选 ' + candidates.length + ' 条 · 置信 ' + confidenceLabel((report.confidence || {}).level)
+      : '无可信候选 · 未做类型判断');
+    setNavMeta('evidence', isNum(rms.ratio) ? 'RMS ' + timesText(rms.ratio) : '无可比数值');
+    var series = ((data.features || {}).normal || {}).series || ((data.features || {}).abnormal || {}).series;
+    setNavMeta('signal', series ? '3 条曲线 · 可试听' : '未生成原始曲线');
+    setNavMeta('knowledge', candidates.length ? '候选 ' + candidates.length + ' 条 · 来源 ' + sources.length + ' 条' : '未检索到候选');
+    setNavMeta('quality', dq.valid === undefined ? '未执行校验'
+      : ((dq.valid ? '校验通过' : '校验未通过') + (dq.comparable === false ? ' · 两样本不可比' : '')));
+    setNavMeta('report', data.report_markdown ? '已生成 · ' + (trace.llm_mode === 'llm' ? '模型撰写' : '模板生成') : '未生成报告');
+    setNavMeta('ask', data.session_id ? '可用 · 7 个固定问题' : '不可用');
+  }
+
+  function renderResult(data) {
+    $('result').style.display = 'block';
+    renderStatusBanner(data);
+    renderSummary(data);
+    renderDevice(data.device);
+    if (String(data.status) === 'error') renderError(data);
+    renderQuality(data.data_quality);
+    renderFeatures(data.comparison);
+    renderSeries(data);
+    renderBand(data.comparison);
+    renderSpectrum(data.features);
+    renderEnvelope(data.features, data.comparison);
+    renderCandidates(data.candidates, data.rag);
+    renderSources(data.sources);
+    renderReport(data.report_markdown, data.report);
+    renderReview(data.review_suggestions);
+    renderTrace(data.trace);
+    renderReasoning(data);
+    enableAsk(data.session_id);
+    updateNavMetas(data);
+  }
+
+  function finalizeRun() {
+    if (finalized || replaying) return;
+    finalized = true;
+    if (streamTimer) { clearTimeout(streamTimer); streamTimer = null; }
+    setLoading(false);
+  }
+
+  // ------------------------------------------------------------ 受控追问（P2）
+  function resetAskUi() {
+    $('ask-question').disabled = true;
+    $('ask-btn').disabled = true;
+    $('ask-btn').textContent = '基于本次会话提问';
+    $('ask-output').innerHTML = '';
+    $('ask-hint').textContent = '完成一次诊断后即可提问。';
+  }
+
+  function resetAsk() {
+    currentSessionId = null;
+    resetAskUi();
+  }
+
+  function enableAsk(sessionId) {
+    currentSessionId = sessionId || null;
+    var can = !!currentSessionId;
+    $('ask-question').disabled = !can;
+    $('ask-btn').disabled = !can;
+    $('ask-hint').textContent = can
+      ? '会话 ' + currentSessionId.slice(0, 8) + '… · 回答仅基于本次会话记录'
+      : '本次响应未包含会话标识，追问不可用。';
+  }
+
+  function setAskBusy(on) {
+    $('ask-btn').disabled = on || !currentSessionId;
+    $('ask-question').disabled = on || !currentSessionId;
+    $('ask-btn').textContent = on ? '查询会话记录中…' : '基于本次会话提问';
+  }
+
+  function runAsk() {
+    if (!currentSessionId || busy) return;
+    var question = $('ask-question').value;
+    if (!question) return;
+    setAskBusy(true);
+    fetch('/api/sessions/' + encodeURIComponent(currentSessionId) + '/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question: question })
+    }).then(function (res) {
+      return res.json().then(function (payload) { return { res: res, payload: payload }; }, function () { return { res: res, payload: null }; });
+    }).then(function (r) {
+      if (!r.res.ok) { renderAskError(r.res.status, r.payload); return; }
+      renderAskAnswer(r.payload);
+    }).catch(function () {
+      renderAskError(0, null);
+    }).then(function () { setAskBusy(false); });
+  }
+
+  function askItemHtml(ans) {
+    return '<div class="qa-item">' +
+      '<p class="qa-q">问：' + esc(ans.question) + '</p>' +
+      '<div class="qa-a' + (ans.no_support ? ' qa-nosupport' : '') + '">' +
+      '<p class="qa-a-label">' + (ans.no_support ? '答（当前诊断记录无法支持该结论）' : '答') + '</p>' +
+      '<pre class="qa-answer">' + esc(ans.answer || '') + '</pre></div>' +
+      (ans.facts_used && ans.facts_used.length
+        ? '<p class="qa-meta">依据字段：' + ans.facts_used.map(function (f) {
+            return '<span class="tag">' + esc(f) + '</span>';
+          }).join('') + '</p>'
+        : '') +
+      (ans.context_scope ? '<p class="qa-meta">事实范围：' + esc(ans.context_scope) + '</p>' : '') +
+      '</div>';
+  }
+
+  function renderAskAnswer(ans) {
+    if (!ans) return;
+    var html = askItemHtml(ans);
+    if (currentRecord) currentRecord.askEntries.push(html);
+    $('ask-output').insertAdjacentHTML('beforeend', html);
+  }
+
+  function renderAskError(status, payload) {
+    var detail = (payload && payload.detail) || {};
+    var code = detail.code || '';
+    var message = detail.message || '';
+    var html;
+    if (status === 400 && detail.allowed_questions) {
+      html = '<div class="qa-item"><div class="tl-warn"><strong>该问题不在受控追问清单内。</strong>' +
+        (message ? esc(message) : '') +
+        '<ul class="plain">' + detail.allowed_questions.map(function (q) { return '<li>' + esc(q) + '</li>'; }).join('') + '</ul></div></div>';
+    } else if (status === 404) {
+      currentSessionId = null;
+      $('ask-question').disabled = true;
+      $('ask-btn').disabled = true;
+      $('ask-hint').textContent = '本次会话已过期或不存在，请重新完成一次诊断后再追问。';
+      html = '<div class="qa-item"><div class="tl-warn"><strong>会话不存在或已过期。</strong>' + esc(message || '') + '</div></div>';
+    } else {
+      html = '<div class="qa-item"><div class="tl-warn"><strong>追问请求失败' + (status ? '（HTTP ' + esc(status) + '）' : '（网络错误）') + '。</strong>' +
+        esc(message || code || '请稍后重试。') + '</div></div>';
+    }
+    if (currentRecord) currentRecord.askEntries.push(html);
+    $('ask-output').insertAdjacentHTML('beforeend', html);
+  }
+
+  // ------------------------------------------------------------ 清理 / 错误展示
+  function clearResults() {
+    resetResultDom();
+    currentRecord = null;
+    currentSessionId = null;
+    showView('process');
+    $('result').style.display = 'none';
+    renderSessionList();
+    renderChat(null);
+    updateChatAvailability();
+  }
+
+  function showHttpError(statusLabel, payload) {
+    var rec = activeStreamRecord || currentRecord;
+    if (rec) {
+      rec.status = 'error';
+      rec.error = { label: statusLabel, payload: payload };
+    }
+    resetResultDom();
+    renderErrorBanner(statusLabel, payload);
+    renderSessionList();
+  }
+
+  function setLoading(on) {
+    busy = on;
+    document.querySelectorAll('.preset-btn, #run-btn, #reset-btn, .slot input, .slot select, .grid-4 input').forEach(function (el) { el.disabled = on; });
+    $('loading').style.display = on ? 'inline' : 'none';
+    $('run-btn').textContent = on ? '分析中…' : '开始分析';
+    clearInterval(loadingTimer);
+    if (on) {
+      var started = Date.now();
+      loadingTimer = setInterval(function () {
+        var seconds = Math.floor((Date.now() - started) / 1000);
+        $('loading-message').textContent = '已等待 ' + seconds + ' 秒' +
+          (currentStageText ? ' · ' + currentStageText : '');
+      }, 1000);
+    }
+  }
+
+  // ------------------------------------------------------------ 初始化
+  $('run-btn').addEventListener('click', runDiagnose);
+  $('ask-btn').addEventListener('click', runAsk);
+  $('ask-question').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') runAsk();
+  });
+  $('download-report').addEventListener('click', function () {
+    if (!currentReport) return;
+    var url = URL.createObjectURL(new Blob(['\ufeff', currentReport], { type: 'text/markdown;charset=utf-8' }));
+    var link = document.createElement('a');
+    link.href = url;
+    link.download = '轴承振动分析报告.md';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  });
+  $('reset-btn').addEventListener('click', function () {
+    clearResults();
+    activeStreamRecord = null;
+    $('form-error').textContent = '';
+    ['normal_sample', 'abnormal_sample', 'normal_file', 'abnormal_file', 'sampling_rate', 'rotation_speed', 'sensor_position', 'device_type'].forEach(function (id) {
+      if ($(id).type === 'file') $(id).value = '';
+      else $(id).value = '';
+    });
+  });
+  $('normal_sample').addEventListener('change', function () { applySample(this.value); });
+  $('abnormal_sample').addEventListener('change', function () { applySample(this.value); });
+  $('chat-send').addEventListener('click', sendChat);
+  $('chat-input').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); sendChat(); }
+  });
+  document.querySelectorAll('.preset-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      if (busy) return;
+      $('normal_file').value = '';
+      $('abnormal_file').value = '';
+      $('normal_sample').value = btn.getAttribute('data-normal');
+      $('abnormal_sample').value = btn.getAttribute('data-abnormal');
+      applySample(btn.getAttribute('data-normal'));
+      applySample(btn.getAttribute('data-abnormal'));
+      $('form-error').textContent = '';
+      runDiagnose();
+    });
+  });
+
+  resetTimeline();
+  resetAsk();
+  renderSessionList();
+  renderChat(null);
+  updateChatAvailability();
+  loadHealth();
+  loadSamples();
+  loadSessions();
+})();
+</script>
+</body>
+</html>
