@@ -1,0 +1,31 @@
+# 构建上下文排除清单：本地环境、密钥、生成物一律不进镜像。
+
+# 本地虚拟环境（镜像内用 pip 重新安装依赖）
+.venv/
+venv/
+
+# 密钥与环境变量文件：绝不进镜像（需要时用 docker run -e 或 --env-file 注入）
+.env
+.env.*
+
+# Python 生成物
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# 生成的向量索引与原始数据（data/samples 需要保留，删掉会让离线演示失效）
+data/chroma/
+data/raw/
+
+# 仓库元数据与开发资料
+.git/
+.gitignore
+docs/
+tests/
+pytest.ini
+README.md
+
+# 镜像构建文件自身
+Dockerfile
+.dockerignore

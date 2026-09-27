@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+work/
+.pytest_cache/
+data/raw/
+data/chroma/
+data/audio/
+data/sessions.db
+*.egg-info/
